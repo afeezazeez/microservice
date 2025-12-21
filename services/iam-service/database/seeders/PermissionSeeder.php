@@ -99,10 +99,22 @@ class PermissionSeeder extends Seeder
                 'description' => 'Invite users to company',
             ],
             [
+                'name' => 'Update User',
+                'slug' => 'user:update',
+                'resource_type' => 'user',
+                'description' => 'Update user information',
+            ],
+            [
+                'name' => 'Delete User',
+                'slug' => 'user:delete',
+                'resource_type' => 'user',
+                'description' => 'Permanently delete users from company (hard delete)',
+            ],
+            [
                 'name' => 'Remove User',
                 'slug' => 'user:remove',
                 'resource_type' => 'user',
-                'description' => 'Remove users from company',
+                'description' => 'Remove users from specific resource (e.g., project, team) but keep in company',
             ],
         ];
 
