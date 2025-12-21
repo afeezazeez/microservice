@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Repositories\PermissionRepository;
 use App\Repositories\UserRepository;
 use App\Repositories\UserRoleRepository;
+use Illuminate\Support\Collection;
 
 class PermissionService
 {
@@ -38,6 +39,8 @@ class PermissionService
 
         $userRoles = $this->getRelevantUserRoles($userId, $user->company_id, $resourceType, $resourceId);
 
+        $hasPermission = false;
+
         foreach ($userRoles as $userRole) {
             $role = $userRole->role;
             
@@ -49,12 +52,13 @@ class PermissionService
             
             foreach ($rolePermissions as $rolePermission) {
                 if ($rolePermission->slug === $permissionSlug) {
-                    return true;
+                    $hasPermission = true;
+                    break 2;
                 }
             }
         }
 
-        return false;
+        return $hasPermission;
     }
 
     public function checkPermissions(int $userId, array $permissionSlugs, ?string $resourceType = null, ?int $resourceId = null): array
@@ -68,7 +72,7 @@ class PermissionService
         return $results;
     }
 
-    private function getRelevantUserRoles(int $userId, int $companyId, ?string $resourceType = null, ?int $resourceId = null): \Illuminate\Support\Collection
+    private function getRelevantUserRoles(int $userId, int $companyId, ?string $resourceType = null, ?int $resourceId = null): Collection
     {
         $conditions = [
             'user_id' => $userId,
