@@ -75,7 +75,43 @@ class RoleService
             $conditions['company_id'] = $companyId;
         }
 
-        return $this->userRoleRepository->findAll($conditions, ['role', 'company'])->toArray();
+        $userRoles = $this->userRoleRepository->findAll($conditions, ['role']);
+
+        return $userRoles->map(function ($userRole) {
+            return [
+                'id' => $userRole->id,
+                'role' => [
+                    'id' => $userRole->role->id,
+                    'name' => $userRole->role->name,
+                    'slug' => $userRole->role->slug,
+                    'description' => $userRole->role->description,
+                ],
+                'resource_type' => $userRole->resource_type,
+                'resource_id' => $userRole->resource_id,
+                'company_id' => $userRole->company_id,
+            ];
+        })->toArray();
+    }
+
+    public function getAllRoles(): array
+    {
+        $roles = $this->roleRepository->findAll([], ['permissions']);
+
+        return $roles->map(function ($role) {
+            return [
+                'id' => $role->id,
+                'name' => $role->name,
+                'slug' => $role->slug,
+                'description' => $role->description,
+                'permissions' => $role->permissions->map(function ($permission) {
+                    return [
+                        'id' => $permission->id,
+                        'name' => $permission->name,
+                        'slug' => $permission->slug,
+                    ];
+                })->toArray(),
+            ];
+        })->toArray();
     }
 }
 
