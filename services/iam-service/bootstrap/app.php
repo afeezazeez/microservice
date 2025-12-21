@@ -1,8 +1,16 @@
 <?php
 
+use App\Exceptions\ClientErrorException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Response;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Throwable;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -10,9 +18,39 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
+    ->withMiddleware(function (): void {
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (Throwable $e) {
+            $error = null;
+            $errors = null;
+            $code = Response::HTTP_INTERNAL_SERVER_ERROR;
+
+            if ($e instanceof ModelNotFoundException || $e instanceof NotFoundHttpException) {
+                $error = 'Route not found';
+                if ($e instanceof ModelNotFoundException) {
+                    $modelName = class_basename($e->getModel());
+                    $error = "$modelName not found";
+                }
+                $code = Response::HTTP_NOT_FOUND;
+            } elseif ($e instanceof ValidationException) {
+                $error = 'Failed validation';
+                $errors = $e->validator->errors();
+                $code = Response::HTTP_UNPROCESSABLE_ENTITY;
+            } elseif ($e instanceof AuthenticationException) {
+                $error = 'Unauthorized';
+                $code = Response::HTTP_UNAUTHORIZED;
+            } elseif ($e instanceof ClientErrorException) {
+                $error = $e->getMessage();
+                $code = Response::HTTP_BAD_REQUEST;
+            } elseif ($e instanceof ThrottleRequestsException) {
+                $error = 'Max attempts exceeded. Retry later.';
+                $code = Response::HTTP_TOO_MANY_REQUESTS;
+            } else {
+                $error = $e->getMessage();
+            }
+
+            return errorResponse($error, [], $errors, [], $code);
+        });
     })->create();

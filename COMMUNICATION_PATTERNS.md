@@ -163,7 +163,7 @@ API Gateway → HTTP Request → IAM Service
    POST /api/v1/files/upload
 
 2. API Gateway → IAM Service (HTTP RPC)
-   Check permission: 'file:upload'
+   Check permission: 'task:create' on project 123
    Response: { hasAccess: true }
 
 3. API Gateway → File Service (HTTP)
