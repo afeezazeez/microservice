@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\RefreshTokenRequest;
 use App\Services\AuthService;
 use App\Exceptions\ClientErrorException;
 use Illuminate\Http\Response;
+use OpenApi\Attributes as OA;
 
 class AuthController extends Controller
 {
@@ -18,6 +19,37 @@ class AuthController extends Controller
         $this->authService = $authService;
     }
 
+    #[OA\Post(
+        path: "/auth/register",
+        summary: "Register company and admin user",
+        tags: ["Authentication"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\MediaType(
+                mediaType: "application/json",
+                schema: new OA\Schema(
+                    properties: [
+                        new OA\Property(property: "company", type: "object", properties: [
+                            new OA\Property(property: "name", type: "string", example: "Acme Corp"),
+                            new OA\Property(property: "email", type: "string", format: "email", example: "contact@acme.com"),
+                            new OA\Property(property: "phone", type: "string", nullable: true, example: "+1234567890"),
+                            new OA\Property(property: "address", type: "string", nullable: true, example: "123 Main St"),
+                        ]),
+                        new OA\Property(property: "user", type: "object", properties: [
+                            new OA\Property(property: "name", type: "string", example: "John Doe"),
+                            new OA\Property(property: "email", type: "string", format: "email", example: "john@acme.com"),
+                            new OA\Property(property: "password", type: "string", format: "password", example: "password123"),
+                            new OA\Property(property: "password_confirmation", type: "string", format: "password", example: "password123"),
+                        ]),
+                    ]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Company registered successfully"),
+            new OA\Response(response: 422, description: "Validation error"),
+        ]
+    )]
     public function registerCompany(RegisterCompanyRequest $request)
     {
         $result = $this->authService->registerCompany(
@@ -28,6 +60,28 @@ class AuthController extends Controller
         return successResponse('Company registered successfully', $result, Response::HTTP_OK);
     }
 
+    #[OA\Post(
+        path: "/auth/login",
+        summary: "User login",
+        tags: ["Authentication"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\MediaType(
+                mediaType: "application/json",
+                schema: new OA\Schema(
+                    required: ["email", "password"],
+                    properties: [
+                        new OA\Property(property: "email", type: "string", format: "email", example: "john@acme.com"),
+                        new OA\Property(property: "password", type: "string", format: "password", example: "password123"),
+                    ]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Login successful"),
+            new OA\Response(response: 400, description: "Invalid credentials"),
+        ]
+    )]
     public function login(LoginRequest $request)
     {
         $result = $this->authService->login(
@@ -42,6 +96,27 @@ class AuthController extends Controller
         return successResponse('Login successful', $result);
     }
 
+    #[OA\Post(
+        path: "/auth/refresh",
+        summary: "Refresh JWT token",
+        tags: ["Authentication"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\MediaType(
+                mediaType: "application/json",
+                schema: new OA\Schema(
+                    required: ["token"],
+                    properties: [
+                        new OA\Property(property: "token", type: "string", example: "eyJ0eXAiOiJKV1QiLCJhbGc..."),
+                    ]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Token refreshed successfully"),
+            new OA\Response(response: 400, description: "Invalid or expired token"),
+        ]
+    )]
     public function refreshToken(RefreshTokenRequest $request)
     {
         $token = $this->authService->refreshToken($request->validated()['token']);
@@ -55,6 +130,16 @@ class AuthController extends Controller
         ]);
     }
 
+    #[OA\Post(
+        path: "/auth/logout",
+        summary: "Logout user (blacklist token)",
+        tags: ["Authentication"],
+        security: [["bearerAuth" => []]],
+        responses: [
+            new OA\Response(response: 200, description: "Logged out successfully"),
+            new OA\Response(response: 401, description: "Unauthorized"),
+        ]
+    )]
     public function logout()
     {
         $token = $this->extractTokenFromRequest();
@@ -68,6 +153,16 @@ class AuthController extends Controller
         return successResponse('Logged out successfully');
     }
 
+    #[OA\Get(
+        path: "/auth/me",
+        summary: "Get authenticated user details",
+        tags: ["Authentication"],
+        security: [["bearerAuth" => []]],
+        responses: [
+            new OA\Response(response: 200, description: "User retrieved successfully"),
+            new OA\Response(response: 401, description: "Unauthorized"),
+        ]
+    )]
     public function me()
     {
         $userId = request()->input('user_id');
