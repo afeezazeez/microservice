@@ -52,8 +52,18 @@ class AuthService
         $token = $this->jwtService->generateToken($user);
 
         return [
-            'user' => $user,
-            'company' => $company,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'company_id' => $user->company_id,
+            ],
+            'company' => [
+                'id' => $company->id,
+                'name' => $company->name,
+                'identifier' => $company->identifier,
+                'email' => $company->email,
+            ],
             'token' => $token,
         ];
     }
@@ -69,7 +79,12 @@ class AuthService
         $token = $this->jwtService->generateToken($user);
 
         return [
-            'user' => $user,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'company_id' => $user->company_id,
+            ],
             'token' => $token,
         ];
     }
@@ -104,6 +119,35 @@ class AuthService
     public function refreshToken(string $token): ?string
     {
         return $this->jwtService->refreshToken($token);
+    }
+
+    public function logout(string $token): bool
+    {
+        return $this->jwtService->blacklistToken($token);
+    }
+
+    public function getAuthenticatedUser(int $userId): ?array
+    {
+        $user = $this->userRepository->findById($userId);
+
+        if (!$user) {
+            return null;
+        }
+
+        $company = $this->companyRepository->findById($user->company_id);
+
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'company_id' => $user->company_id,
+            'company' => $company ? [
+                'id' => $company->id,
+                'name' => $company->name,
+                'identifier' => $company->identifier,
+                'email' => $company->email,
+            ] : null,
+        ];
     }
 
     private function generateUniqueIdentifier(): string

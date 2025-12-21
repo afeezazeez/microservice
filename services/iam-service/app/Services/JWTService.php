@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Repositories\UserRepository;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
@@ -37,12 +38,46 @@ class JWTService
     public function validateToken(string $token): ?array
     {
         try {
+            if ($this->isTokenBlacklisted($token)) {
+                return null;
+            }
+
             $decoded = JWT::decode($token, new Key($this->secret, 'HS256'));
             return (array) $decoded;
         } catch (\Exception $e) {
             Log::error('JWT validation failed: ' . $e->getMessage());
             return null;
         }
+    }
+
+    public function blacklistToken(string $token): bool
+    {
+        try {
+            $decoded = JWT::decode($token, new Key($this->secret, 'HS256'));
+            $decodedArray = (array) $decoded;
+            
+            $expirationTime = $decodedArray['exp'] ?? now()->addMinutes($this->ttl)->timestamp;
+            $ttl = max(0, $expirationTime - now()->timestamp);
+
+            $tokenId = $this->getTokenId($token);
+            Cache::put("jwt:blacklist:{$tokenId}", true, $ttl);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Token blacklist failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function isTokenBlacklisted(string $token): bool
+    {
+        $tokenId = $this->getTokenId($token);
+        return Cache::has("jwt:blacklist:{$tokenId}");
+    }
+
+    private function getTokenId(string $token): string
+    {
+        return hash('sha256', $token);
     }
 
     public function refreshToken(string $token): ?string
