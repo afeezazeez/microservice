@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Service-specific .env files (keep .env.example files)
+services/*/.env
+services/*/.env.local
+
+# Service-specific .env files (keep .env.example)
+services/*/.env
+services/*/.env.local
+
+# Build outputs
+dist/
+build/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Laravel
+storage/*.key
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+
+# Uploads
+uploads/
+public/uploads/
+
+# Docker
+docker-compose.override.yml
+

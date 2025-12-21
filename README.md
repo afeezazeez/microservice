@@ -1,0 +1,192 @@
+# Task Management Platform - Microservices Architecture
+
+A comprehensive microservices demonstration project showcasing:
+- Microservices architecture
+- API Gateway pattern
+- RabbitMQ messaging (Direct, Topic, Fanout exchanges)
+- IAM (Identity and Access Management)
+- HTTP calls, Async operations, RPC calls
+- Best practices at senior level
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────┐
+│      Frontend (Vue 3 + TS + Tailwind)   │
+└──────────────────┬──────────────────────┘
+                   │
+                   │ HTTP Requests
+                   ▼
+┌─────────────────────────────────────────┐
+│      API Gateway (Node.js + TS)         │
+│      Port: 3000                         │
+└──┬──────┬──────┬──────┬──────┬──────────┘
+   │      │      │      │      │
+   │      │      │      │      │ HTTP/RabbitMQ
+   ▼      ▼      ▼      ▼      ▼
+┌────┐ ┌─────┐ ┌────┐ ┌────┐ ┌─────┐
+│IAM │ │Proj │ │Task│ │Notif│ │File │
+│Laravel│ │Node│ │Node│ │Node│ │Node│
+└────┘ └─────┘ └────┘ └────┘ └─────┘
+```
+
+## Microservices
+
+### 1. IAM Service (Laravel 12)
+- **Port**: 8001
+- **Responsibilities**: Authentication, User Management, Roles, Permissions, Policies
+- **Database**: `iam_db` (MySQL)
+- **Tech**: Laravel 12, MySQL
+
+### 2. Project Service (Node.js + TS)
+- **Port**: 3001
+- **Responsibilities**: Projects, Teams, Workspaces
+- **Database**: `project_db` (MySQL with Sequelize)
+- **Tech**: Node.js, TypeScript, Express, Sequelize
+
+### 3. Task Service (Node.js + TS)
+- **Port**: 3002
+- **Responsibilities**: Tasks, Subtasks, Assignments
+- **Database**: `task_db` (MySQL with Sequelize)
+- **Tech**: Node.js, TypeScript, Express, Sequelize
+
+### 4. Notification Service (Node.js + TS)
+- **Port**: 3003
+- **Responsibilities**: Real-time notifications, Email
+- **Database**: `notification_db` (MySQL with Sequelize)
+- **Tech**: Node.js, TypeScript, Express
+
+### 5. File Service (Node.js + TS)
+- **Port**: 3004
+- **Responsibilities**: File uploads, Processing, Storage
+- **Database**: `file_db` (MySQL with Sequelize)
+- **Storage**: MinIO (S3-compatible) for local dev, AWS S3 for production
+- **Tech**: Node.js, TypeScript, Express
+
+### 6. Analytics Service (Node.js + TS)
+- **Port**: 3005
+- **Responsibilities**: Reports, Dashboards, Metrics
+- **Database**: `analytics_db` (MySQL with Sequelize)
+- **Tech**: Node.js, TypeScript, Express
+
+### 7. API Gateway (Node.js + TS)
+- **Port**: 3000
+- **Responsibilities**: Routing, Auth validation, IAM checks
+- **Tech**: Node.js, TypeScript, Express
+
+## RabbitMQ Patterns
+
+### Direct Exchange
+- Task assignment → Specific user notification
+- Direct messages between users
+
+### Topic Exchange
+- `project.{projectId}.task.created` → Notify project members
+- `user.{userId}.notification.*` → User-specific notifications
+
+### Fanout Exchange
+- System-wide announcements
+- Broadcast maintenance notifications
+
+### RPC Calls (HTTP-based)
+- API Gateway → IAM Service: Validate JWT, Check permissions (HTTP)
+- Services → IAM Service: Permission checks (HTTP)
+- Note: RPC calls are synchronous HTTP requests, not RabbitMQ
+
+## Getting Started
+
+### Prerequisites
+- Docker & Docker Compose
+- Node.js 18+
+- PHP 8.2+ (for Laravel)
+- Composer
+
+### Installation
+
+1. Clone the repository
+```bash
+git clone <repo-url>
+cd microservices
+```
+
+2. Start all services
+```bash
+docker-compose up -d
+```
+
+3. Run migrations
+```bash
+# IAM Service
+cd services/iam-service
+php artisan migrate
+
+# Node.js Services
+cd services/project-service
+npm run migrate
+# Repeat for other services
+```
+
+4. Start Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## Project Structure
+
+```
+microservices/
+├── services/
+│   ├── iam-service/          # Laravel 12 (iam_db)
+│   ├── project-service/       # Node.js + TS (project_db)
+│   ├── task-service/          # Node.js + TS (task_db)
+│   ├── notification-service/  # Node.js + TS (notification_db)
+│   ├── file-service/          # Node.js + TS (file_db)
+│   ├── analytics-service/      # Node.js + TS (analytics_db)
+│   └── api-gateway/           # Node.js + TS (no DB)
+├── docker/
+│   └── mysql/
+│       └── init-databases.sql  # Creates separate DBs for each service
+├── frontend/                   # Vue 3 + TS + Tailwind
+├── docker-compose.yml
+└── README.md
+```
+
+## Database Architecture
+
+**Database-per-Service Pattern** - Each microservice has its own database:
+
+- `iam_db` - IAM Service
+- `project_db` - Project Service
+- `task_db` - Task Service
+- `notification_db` - Notification Service
+- `file_db` - File Service
+- `analytics_db` - Analytics Service
+
+All databases run on a single MySQL instance (can be split into separate instances for production).
+
+## Communication Patterns
+
+### HTTP (Synchronous)
+- Frontend → API Gateway → Services
+- Service-to-service calls (when needed)
+
+### RabbitMQ (Asynchronous)
+- Task created → Notification Service
+- File uploaded → Analytics Service
+- Project updated → Notification Service
+
+### RPC (Synchronous HTTP)
+- Permission checks: API Gateway → IAM Service (HTTP)
+- Token validation: API Gateway → IAM Service (HTTP)
+- Data validation: Service-to-service HTTP calls
+
+## Environment Variables
+
+Each service has its own `.env` file. See individual service READMEs for details.
+
+## License
+
+ISC
+
