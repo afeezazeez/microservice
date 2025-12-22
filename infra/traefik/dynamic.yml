@@ -59,6 +59,12 @@ http:
       service: rabbitmq
       tls: {}
 
+    grafana:
+      rule: "Host(`grafana.afeez-dev.local`)"
+      entryPoints: ["websecure"]
+      service: grafana
+      tls: {}
+
   services:
     iam:
       loadBalancer:
@@ -104,4 +110,9 @@ http:
       loadBalancer:
         servers:
           - url: "http://task-rabbitmq:15672"
+
+    grafana:
+      loadBalancer:
+        servers:
+          - url: "http://task-grafana:3000"
 

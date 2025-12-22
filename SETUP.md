@@ -16,6 +16,7 @@ Add these to your hosts file (copy/paste ready):
 127.0.0.1 file-service.afeez-dev.local
 127.0.0.1 analytics-service.afeez-dev.local
 127.0.0.1 api-gateway.afeez-dev.local
+127.0.0.1 grafana.afeez-dev.local
 ```
 
 How to edit hosts file:
@@ -40,7 +41,8 @@ mkcert -key-file infra/traefik/certs/local-key.pem -cert-file infra/traefik/cert
   notification-service.afeez-dev.local \
   file-service.afeez-dev.local \
   analytics-service.afeez-dev.local \
-  api-gateway.afeez-dev.local
+  api-gateway.afeez-dev.local \
+  grafana.afeez-dev.local
 ```
 3) Start the stack (`make setup` or `make up`). Traefik serves HTTPS using those certs.
 
@@ -54,6 +56,7 @@ mkcert -key-file infra/traefik/certs/local-key.pem -cert-file infra/traefik/cert
 - Analytics Service: https://analytics-service.afeez-dev.local (proxy) or http://localhost:3005 (direct)
 - MinIO console: https://minio.afeez-dev.local (proxy) or http://localhost:9001 (direct)
 - RabbitMQ console: https://rabbitmq.afeez-dev.local (proxy) or http://localhost:15672 (direct)
+- Grafana (logs UI): https://grafana.afeez-dev.local (proxy) or http://localhost:3009 (direct, admin/admin123)
 
 ---
 

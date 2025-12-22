@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Exceptions\ClientErrorException;
 use App\Repositories\CompanyRepository;
 use App\Repositories\UserRepository;
 use App\Services\JWTService;
 use App\Services\RoleService;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class AuthService
@@ -51,6 +53,7 @@ class AuthService
 
         $token = $this->jwtService->generateToken($user);
 
+     
         return [
             'user' => [
                 'id' => $user->id,
@@ -68,12 +71,23 @@ class AuthService
         ];
     }
 
-    public function login(string $email, string $password): ?array
+    public function login(string $email, string $password): array
     {
         $user = $this->userRepository->findBy('email', $email);
 
-        if (!$user || !Hash::check($password, $user->password)) {
-            return null;
+        if (!$user) {
+            Log::warning('auth_login_failed_user_not_found', [
+                'email' => $email,
+            ]);
+            throw new ClientErrorException('Invalid credentials');
+        }
+
+        if (!Hash::check($password, $user->password)) {
+            Log::warning('auth_login_failed_invalid_password', [
+                'email' => $email,
+                'user_id' => $user->id,
+            ]);
+            throw new ClientErrorException('Invalid credentials');
         }
 
         $token = $this->jwtService->generateToken($user);
@@ -116,22 +130,32 @@ class AuthService
         ];
     }
 
-    public function refreshToken(string $token): ?string
+    public function refreshToken(string $token): string
     {
-        return $this->jwtService->refreshToken($token);
+        $refreshedToken = $this->jwtService->refreshToken($token);
+
+        if (!$refreshedToken) {
+            throw new ClientErrorException('Invalid or expired token');
+        }
+
+        return $refreshedToken;
     }
 
-    public function logout(string $token): bool
+    public function logout(?string $token): void
     {
-        return $this->jwtService->blacklistToken($token);
+        if (!$token) {
+            throw new ClientErrorException('Token not provided');
+        }
+
+        $this->jwtService->blacklistToken($token);
     }
 
-    public function getAuthenticatedUser(int $userId): ?array
+    public function getAuthenticatedUser(int $userId): array
     {
         $user = $this->userRepository->findById($userId);
 
         if (!$user) {
-            return null;
+            throw new ClientErrorException('User not found');
         }
 
         $company = $this->companyRepository->findById($user->company_id);

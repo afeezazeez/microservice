@@ -6,7 +6,6 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterCompanyRequest;
 use App\Http\Requests\Auth\RefreshTokenRequest;
 use App\Services\AuthService;
-use App\Exceptions\ClientErrorException;
 use Illuminate\Http\Response;
 use OpenApi\Attributes as OA;
 
@@ -89,10 +88,6 @@ class AuthController extends Controller
             $request->validated()['password']
         );
 
-        if (!$result) {
-            throw new ClientErrorException('Invalid credentials');
-        }
-
         return successResponse('Login successful', $result);
     }
 
@@ -121,10 +116,6 @@ class AuthController extends Controller
     {
         $token = $this->authService->refreshToken($request->validated()['token']);
 
-        if (!$token) {
-            throw new ClientErrorException('Invalid or expired token');
-        }
-
         return successResponse('Token refreshed successfully', [
             'token' => $token,
         ]);
@@ -143,10 +134,6 @@ class AuthController extends Controller
     public function logout()
     {
         $token = $this->extractTokenFromRequest();
-
-        if (!$token) {
-            throw new ClientErrorException('Token not provided');
-        }
 
         $this->authService->logout($token);
 
@@ -168,10 +155,6 @@ class AuthController extends Controller
         $userId = request()->input('user_id');
         
         $user = $this->authService->getAuthenticatedUser($userId);
-
-        if (!$user) {
-            throw new ClientErrorException('User not found');
-        }
 
         return successResponse('User retrieved successfully', $user);
     }

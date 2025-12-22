@@ -1,0 +1,63 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: status
+            values: ["running"]
+
+    relabel_configs:
+      # Set job label - MUST be set for Loki to accept the stream
+      - target_label: job
+        replacement: docker
+      
+      # Extract and set container_name
+      - source_labels: [__meta_docker_container_name]
+        regex: /(.+)
+        target_label: container_name
+        replacement: ${1}
+      
+      # Set stream label (stdout/stderr)
+      - source_labels: [__meta_docker_container_log_stream]
+        target_label: stream
+      
+      # Map the log file path
+      - source_labels: [__meta_docker_container_log_path]
+        target_label: __path__
+      
+      # Drop the temporary meta labels to clean up
+      - regex: __meta_docker_container.*
+        action: labeldrop
+
+    pipeline_stages:
+      # Parse JSON log lines (IAM service outputs JSON to stderr)
+      - json:
+          expressions:
+            level: level
+            message: message
+            context: context
+          drop_malformed: false
+      
+      # Extract correlation_id from the log line using regex
+      # Looks for "correlation_id":"value" in the context object
+      - regex:
+          expression: '"correlation_id":"(?P<correlation_id>[a-f0-9-]+)"'
+      
+      # Extract correlation_id as a label for querying across all services
+      - labels:
+          correlation_id:
+      
+      # Note: We don't use 'output' stage here - we want to preserve the full JSON log line
+      # The parsed fields (level, message, correlation_id, etc.) are available as extracted fields
+      # and correlation_id is also available as a label for querying

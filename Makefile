@@ -23,7 +23,7 @@ build: ## Build all images
 
 up: ## Start all Docker containers (infra + services)
 	@echo "$(BLUE)📦 Starting Docker containers...$(NC)"
-	@docker-compose up -d --build traefik mysql redis rabbitmq minio iam-service iam-nginx || echo "$(YELLOW)⚠️  Some services may not be available yet$(NC)"
+	@docker-compose up -d --build traefik mysql redis rabbitmq minio loki promtail grafana iam-service iam-nginx || echo "$(YELLOW)⚠️  Some services may not be available yet$(NC)"
 	@echo "$(BLUE)⏳ Waiting for services to be healthy...$(NC)"
 	@sleep 10
 
@@ -44,7 +44,7 @@ iam-setup: iam-up iam-migrate iam-seed iam-swagger ## Setup IAM service (start, 
 
 iam-up: ## Start IAM service and its deps
 	@echo "$(BLUE)🚀 Starting IAM service and dependencies...$(NC)"
-	@docker-compose up -d --build traefik mysql redis rabbitmq minio iam-service iam-nginx || echo "$(YELLOW)⚠️  IAM may not be available yet$(NC)"
+	@docker-compose up -d --build traefik mysql redis rabbitmq minio loki promtail grafana iam-service iam-nginx || echo "$(YELLOW)⚠️  IAM may not be available yet$(NC)"
 	@echo "$(BLUE)⏳ Waiting for IAM stack to be healthy...$(NC)"
 	@sleep 8
 
@@ -138,7 +138,8 @@ status: ## Display all service URLs and documentation links
 	@echo "  🐰 RabbitMQ: https://rabbitmq.afeez-dev.local (admin/admin123)"
 	@echo "  🗄️  MySQL:    localhost:3306"
 	@echo "  📦 Redis:     localhost:6379"
-	@echo "  📁 MinIO:    https://minio.afeez-dev.local (minioadmin/minioadmin123)"
+	@echo "  📁 MinIO:     https://minio.afeez-dev.local (minioadmin/minioadmin123)"
+	@echo "  📊 Grafana(For logs):   https://grafana.afeez-dev.local (admin/admin123)"
 	@echo ""
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""

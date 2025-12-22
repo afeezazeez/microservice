@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\ClientErrorException;
 use App\Repositories\UserRepository;
 use App\Repositories\CompanyRepository;
 use Illuminate\Support\Facades\Hash;
@@ -21,6 +22,10 @@ class UserService
 
     public function listUsers(int $companyId, array $filters = []): array
     {
+        if (!$companyId) {
+            throw new ClientErrorException('Company ID not found');
+        }
+
         $conditions = array_merge(['company_id' => $companyId], $filters);
         $users = $this->userRepository->findAll($conditions);
 
@@ -34,15 +39,19 @@ class UserService
         })->toArray();
     }
 
-    public function getUserById(int $userId, int $companyId): ?array
+    public function getUserById(int $userId, int $companyId): array
     {
+        if (!$companyId) {
+            throw new ClientErrorException('Company ID not found');
+        }
+
         $user = $this->userRepository->findOne([
             'id' => $userId,
             'company_id' => $companyId,
         ]);
 
         if (!$user) {
-            return null;
+            throw new ClientErrorException('User not found');
         }
 
         return [
@@ -53,15 +62,19 @@ class UserService
         ];
     }
 
-    public function updateUser(int $userId, int $companyId, array $data): ?array
+    public function updateUser(int $userId, int $companyId, array $data): array
     {
+        if (!$companyId) {
+            throw new ClientErrorException('Company ID not found');
+        }
+
         $user = $this->userRepository->findOne([
             'id' => $userId,
             'company_id' => $companyId,
         ]);
 
         if (!$user) {
-            return null;
+            throw new ClientErrorException('User not found');
         }
 
         $updateData = [];
@@ -87,18 +100,22 @@ class UserService
         return $this->getUserById($userId, $companyId);
     }
 
-    public function deleteUser(int $userId, int $companyId): bool
+    public function deleteUser(int $userId, int $companyId): void
     {
+        if (!$companyId) {
+            throw new ClientErrorException('Company ID not found');
+        }
+
         $user = $this->userRepository->findOne([
             'id' => $userId,
             'company_id' => $companyId,
         ]);
 
         if (!$user) {
-            return false;
+            throw new ClientErrorException('User not found');
         }
 
-        return $this->userRepository->delete($userId);
+        $this->userRepository->delete($userId);
     }
 }
 

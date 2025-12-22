@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\ClientErrorException;
 use App\Repositories\RoleRepository;
 use App\Repositories\UserRoleRepository;
 
@@ -18,12 +19,16 @@ class RoleService
         $this->userRoleRepository = $userRoleRepository;
     }
 
-    public function assignRole(int $userId, string $roleSlug, int $companyId, ?string $resourceType = null, ?int $resourceId = null): bool
+    public function assignRole(int $userId, string $roleSlug, int $companyId, ?string $resourceType = null, ?int $resourceId = null): void
     {
+        if (!$companyId) {
+            throw new ClientErrorException('Company ID not found');
+        }
+
         $role = $this->roleRepository->findBy('slug', $roleSlug);
         
         if (!$role) {
-            return false;
+            throw new ClientErrorException('Failed to assign role. Role not found.');
         }
 
         $this->userRoleRepository->create([
@@ -33,16 +38,14 @@ class RoleService
             'resource_type' => $resourceType,
             'resource_id' => $resourceId,
         ]);
-
-        return true;
     }
 
-    public function removeRole(int $userId, string $roleSlug, ?string $resourceType = null, ?int $resourceId = null): bool
+    public function removeRole(int $userId, string $roleSlug, ?string $resourceType = null, ?int $resourceId = null): void
     {
         $role = $this->roleRepository->findBy('slug', $roleSlug);
         
         if (!$role) {
-            return false;
+            throw new ClientErrorException('Failed to remove role. Role not found.');
         }
 
         $conditions = [
@@ -61,14 +64,18 @@ class RoleService
         $userRole = $this->userRoleRepository->findOne($conditions);
         
         if (!$userRole) {
-            return false;
+            throw new ClientErrorException('Failed to remove role. Role assignment not found.');
         }
 
-        return $this->userRoleRepository->delete($userRole->id);
+        $this->userRoleRepository->delete($userRole->id);
     }
 
     public function getUserRoles(int $userId, ?int $companyId = null): array
     {
+        if (!$companyId) {
+            throw new ClientErrorException('Company ID not found');
+        }
+
         $conditions = ['user_id' => $userId];
         
         if ($companyId) {
