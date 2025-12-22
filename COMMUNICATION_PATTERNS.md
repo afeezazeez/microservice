@@ -189,6 +189,3 @@ API Gateway → HTTP Request → IAM Service
 | **RabbitMQ** | Asynchronous | Events, notifications | Task created → Notify users |
 | **RPC (HTTP)** | Synchronous | Permission checks, validation | API Gateway → IAM Service |
 
-**Key Point**: RPC calls are **HTTP requests**, not RabbitMQ messages. RabbitMQ is only for asynchronous operations.
-
-

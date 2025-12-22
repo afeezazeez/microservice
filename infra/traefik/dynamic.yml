@@ -1,0 +1,107 @@
+tls:
+  certificates:
+    - certFile: "/etc/traefik/certs/local-cert.pem"
+      keyFile: "/etc/traefik/certs/local-key.pem"
+
+http:
+  routers:
+    iam:
+      rule: "Host(`iam-service.afeez-dev.local`)"
+      entryPoints: ["websecure"]
+      service: iam
+      tls: {}
+
+    api-gateway:
+      rule: "Host(`api-gateway.afeez-dev.local`)"
+      entryPoints: ["websecure"]
+      service: api-gateway
+      tls: {}
+
+    project:
+      rule: "Host(`project-service.afeez-dev.local`)"
+      entryPoints: ["websecure"]
+      service: project
+      tls: {}
+
+    task:
+      rule: "Host(`task-service.afeez-dev.local`)"
+      entryPoints: ["websecure"]
+      service: task
+      tls: {}
+
+    notification:
+      rule: "Host(`notification-service.afeez-dev.local`)"
+      entryPoints: ["websecure"]
+      service: notification
+      tls: {}
+
+    file:
+      rule: "Host(`file-service.afeez-dev.local`)"
+      entryPoints: ["websecure"]
+      service: file
+      tls: {}
+
+    analytics:
+      rule: "Host(`analytics-service.afeez-dev.local`)"
+      entryPoints: ["websecure"]
+      service: analytics
+      tls: {}
+
+    minio:
+      rule: "Host(`minio.afeez-dev.local`)"
+      entryPoints: ["websecure"]
+      service: minio
+      tls: {}
+
+    rabbitmq:
+      rule: "Host(`rabbitmq.afeez-dev.local`)"
+      entryPoints: ["websecure"]
+      service: rabbitmq
+      tls: {}
+
+  services:
+    iam:
+      loadBalancer:
+        servers:
+          - url: "http://task-iam-nginx:80"
+
+    api-gateway:
+      loadBalancer:
+        servers:
+          - url: "http://task-api-gateway:3000"
+
+    project:
+      loadBalancer:
+        servers:
+          - url: "http://task-project-service:3001"
+
+    task:
+      loadBalancer:
+        servers:
+          - url: "http://task-task-service:3002"
+
+    notification:
+      loadBalancer:
+        servers:
+          - url: "http://task-notification-service:3003"
+
+    file:
+      loadBalancer:
+        servers:
+          - url: "http://task-file-service:3004"
+
+    analytics:
+      loadBalancer:
+        servers:
+          - url: "http://task-analytics-service:3005"
+
+    minio:
+      loadBalancer:
+        servers:
+          - url: "http://task-minio:9001"
+
+    rabbitmq:
+      loadBalancer:
+        servers:
+          - url: "http://task-rabbitmq:15672"
+

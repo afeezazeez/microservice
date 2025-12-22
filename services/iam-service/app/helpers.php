@@ -17,12 +17,17 @@ if (!function_exists('successResponse')) {
 }
 
 if (!function_exists('errorResponse')) {
-    function errorResponse(string $error = null, array $data = [], MessageBag $errors = null, array $trace = [], int $code = Response::HTTP_BAD_REQUEST): JsonResponse
+    function errorResponse(?string $error = null, array $data = [], ?MessageBag $errors = null, array $trace = [], int $code = Response::HTTP_BAD_REQUEST): JsonResponse
     {
+        $firstError = $errors instanceof MessageBag && $errors->isNotEmpty()
+            ? $errors->first()
+            : $error;
+
         return response()->json([
             'success' => false,
             'data' => $data,
             'error' => $error,
+            'error_message' => $firstError,
             'errors' => $errors ?? [],
             'trace' => $trace
         ], $code);

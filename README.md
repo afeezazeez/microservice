@@ -91,17 +91,96 @@ A comprehensive microservices demonstration project showcasing:
 ### RPC Calls (HTTP-based)
 - API Gateway → IAM Service: Validate JWT, Check permissions (HTTP)
 - Services → IAM Service: Permission checks (HTTP)
-- Note: RPC calls are synchronous HTTP requests, not RabbitMQ
+
+## Infrastructure / Local Domains & HTTPS
+
+I front services with Traefik so you can hit friendly hostnames over HTTPS locally.
+
+### Host entries
+Add these to your hosts file (copy/paste ready):
+```
+127.0.0.1 iam-service.afeez-dev.local
+127.0.0.1 minio.afeez-dev.local
+127.0.0.1 rabbitmq.afeez-dev.local
+127.0.0.1 project-service.afeez-dev.local
+127.0.0.1 task-service.afeez-dev.local
+127.0.0.1 notification-service.afeez-dev.local
+127.0.0.1 file-service.afeez-dev.local
+127.0.0.1 analytics-service.afeez-dev.local
+127.0.0.1 api-gateway.afeez-dev.local
+```
+
+How to edit hosts file:
+- macOS / Linux: `sudo nano /etc/hosts` (or use your editor of choice)
+- Windows: open `C:\Windows\System32\drivers\etc\hosts` as Administrator and append the entries above
+```
+127.0.0.1 iam-service.local
+127.0.0.1 minio.local
+127.0.0.1 rabbitmq.local
+127.0.0.1 project-service.local
+127.0.0.1 task-service.local
+127.0.0.1 notification-service.local
+127.0.0.1 file-service.local
+127.0.0.1 analytics-service.local
+127.0.0.1 api-gateway.local
+```
+
+### Dev TLS (mkcert)
+1) Install mkcert (see https://github.com/FiloSottile/mkcert#installation)  
+   - macOS (easy): `brew install mkcert` and (if you use Firefox) `brew install nss`  
+2) Generate local certs (one-time):
+```bash
+cd /Users/chillingloccini/Desktop/microservices    # or your cloned repo path
+mkdir -p infra/traefik/certs
+
+mkcert -install
+mkcert -key-file infra/traefik/certs/local-key.pem -cert-file infra/traefik/certs/local-cert.pem \
+  iam-service.afeez-dev.local \
+  minio.afeez-dev.local \
+  rabbitmq.afeez-dev.local \
+  project-service.afeez-dev.local \
+  task-service.afeez-dev.local \
+  notification-service.afeez-dev.local \
+  file-service.afeez-dev.local \
+  analytics-service.afeez-dev.local \
+  api-gateway.afeez-dev.local
+```
+3) Start the stack (`make setup` or `make up`). Traefik serves HTTPS using those certs.
+
+### Access URLs (once running)
+- IAM: https://iam-service.afeez-dev.local (proxy) or http://localhost:8001 (direct)
+- API Gateway: https://api-gateway.afeez-dev.local (proxy) or http://localhost:3000 (direct)
+- Project Service: https://project-service.afeez-dev.local (proxy) or http://localhost:3001 (direct)
+- Task Service: https://task-service.afeez-dev.local (proxy) or http://localhost:3002 (direct)
+- Notification Service: https://notification-service.afeez-dev.local (proxy) or http://localhost:3003 (direct)
+- File Service: https://file-service.afeez-dev.local (proxy) or http://localhost:3004 (direct)
+- Analytics Service: https://analytics-service.afeez-dev.local (proxy) or http://localhost:3005 (direct)
+- MinIO console: https://minio.afeez-dev.local (proxy) or http://localhost:9001 (direct)
+- RabbitMQ console: https://rabbitmq.afeez-dev.local (proxy) or http://localhost:15672 (direct)
+
+### Service endpoints (summary)
+| Service                | Proxy URL                                      | Direct Port    | Status       |
+|------------------------|-----------------------------------------------|----------------|--------------|
+| IAM (Laravel)          | https://iam-service.afeez-dev.local           | 8001           | Implemented  |
+| API Gateway (Node)     | https://api-gateway.afeez-dev.local           | 3000           | Implemented  |
+| Project Service (Node) | https://project-service.afeez-dev.local       | 3001           | Implemented  |
+| Task Service (Node)    | https://task-service.afeez-dev.local          | 3002           | Implemented  |
+| Notification Service   | https://notification-service.afeez-dev.local  | 3003           | Implemented  |
+| File Service           | https://file-service.afeez-dev.local          | 3004           | Implemented  |
+| Analytics Service      | https://analytics-service.afeez-dev.local     | 3005           | Implemented  |
+| MinIO Console          | https://minio.afeez-dev.local                 | 9001           | Implemented  |
+| RabbitMQ Console       | https://rabbitmq.afeez-dev.local              | 15672          | Implemented  |
 
 ## Getting Started
 
 ### Prerequisites
 - Docker & Docker Compose
-- Node.js 18+
-- PHP 8.2+ (for Laravel)
-- Composer
+- Make (optional, but recommended)
+- Node.js 18+ (for local development)
+- PHP 8.2+ (for Laravel local development)
+- Composer (for Laravel local development)
 
-### Installation
+### Quick Start
 
 1. Clone the repository
 ```bash
@@ -109,24 +188,51 @@ git clone <repo-url>
 cd microservices
 ```
 
-2. Start all services
+2. Run setup (starts all services, runs migrations, seeds data, generates docs)
+```bash
+make setup
+```
+
+This will:
+- Start all Docker containers
+- Run IAM Service migrations
+- Seed IAM Service data
+- Generate Swagger documentation
+- Display all service URLs and documentation links
+
+### Available Make Commands
+
+```bash
+make help          # Show all available commands
+make setup         # Complete setup (up + migrations + seed + docs + status)
+make up            # Start all Docker containers
+make down          # Stop all Docker containers
+make restart       # Restart all services
+make status        # Display all service URLs and docs
+make logs          # Show logs from all services
+make clean         # Stop and remove all containers/volumes
+make iam-setup     # Setup IAM service (migrate + seed + swagger)
+make iam-migrate   # Run IAM migrations only
+make iam-seed      # Run IAM seeders only
+make iam-swagger   # Generate IAM Swagger docs only
+```
+
+### Manual Setup (without Make)
+
+1. Start all services
 ```bash
 docker-compose up -d
 ```
 
-3. Run migrations
+2. Run migrations
 ```bash
 # IAM Service
-cd services/iam-service
-php artisan migrate
-
-# Node.js Services
-cd services/project-service
-npm run migrate
-# Repeat for other services
+docker-compose exec iam-service php artisan migrate --force
+docker-compose exec iam-service php artisan db:seed --force
+docker-compose exec iam-service php artisan l5-swagger:generate
 ```
 
-4. Start Frontend
+3. Start Frontend (when ready)
 ```bash
 cd frontend
 npm install

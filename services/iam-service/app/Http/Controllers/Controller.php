@@ -10,7 +10,7 @@ use OpenApi\Attributes as OA;
     description: "Identity and Access Management Service API Documentation"
 )]
 #[OA\Server(
-    url: "http://localhost:8001/api",
+    url: "https://iam-service.afeez-dev.local/api",
     description: "IAM Service API Server"
 )]
 #[OA\SecurityScheme(

@@ -13,9 +13,10 @@ return [
             ],
             'paths' => [
                 /*
-                 * Edit to include full URL in ui for assets
+                 * Edit to include full URL in ui for assets.
+                 * Using relative paths avoids mixed-content issues behind HTTPS proxies.
                  */
-                'use_absolute_path' => env('L5_SWAGGER_USE_ABSOLUTE_PATH', true),
+                'use_absolute_path' => env('L5_SWAGGER_USE_ABSOLUTE_PATH', false),
 
                 /*
                 * Edit to set path where swagger ui assets should be stored
@@ -242,10 +243,9 @@ return [
         'generate_yaml_copy' => env('L5_SWAGGER_GENERATE_YAML_COPY', false),
 
         /*
-         * Edit to trust the proxy's ip address - needed for AWS Load Balancer
-         * string[]
+         * Trust the proxy's IP address / headers (needed behind reverse proxies like Traefik).
          */
-        'proxy' => false,
+        'proxy' => env('L5_SWAGGER_PROXY', true),
 
         /*
          * Configs plugin allows to fetch external configs instead of passing them to SwaggerUIBundle.

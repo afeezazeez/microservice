@@ -44,3 +44,6 @@ public/uploads/
 # Docker
 docker-compose.override.yml
 
+# Local TLS certs (mkcert)
+infra/traefik/certs/
+
