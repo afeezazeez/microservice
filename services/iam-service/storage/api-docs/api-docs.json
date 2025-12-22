@@ -7,7 +7,7 @@
     },
     "servers": [
         {
-            "url": "http://localhost:8001/api",
+            "url": "https://iam-service.afeez-dev.local/api",
             "description": "IAM Service API Server"
         }
     ],
