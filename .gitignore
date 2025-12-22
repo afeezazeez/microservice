@@ -47,3 +47,6 @@ docker-compose.override.yml
 # Local TLS certs (mkcert)
 infra/traefik/certs/
 
+# Local project docs
+TODOS.md
+
