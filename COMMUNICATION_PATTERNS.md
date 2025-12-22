@@ -21,8 +21,8 @@ We use **three communication patterns**:
 
 ### Example:
 ```typescript
-// API Gateway → Project Service
-const response = await axios.get('http://project-service:3001/projects/123');
+// API Gateway → Project Service (via reverse proxy)
+const response = await axios.get('https://project-service.afeez-dev.local/api/projects/123');
 ```
 
 ### Flow:
@@ -107,8 +107,8 @@ rabbitmq.consume('announcements.fanout', '', (message) => {
 
 ### Example:
 ```typescript
-// API Gateway → IAM Service (HTTP RPC)
-const hasPermission = await axios.post('http://iam-service:8000/api/rpc/check-permission', {
+// API Gateway → IAM Service (HTTP RPC via reverse proxy)
+const hasPermission = await axios.post('https://iam-service.afeez-dev.local/api/rpc/check-permission', {
   userId: 123,
   permission: 'task:create',
   resourceId: 456
