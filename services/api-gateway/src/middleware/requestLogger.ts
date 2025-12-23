@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import pinoHttp from 'pino-http';
-import { logger } from '../logger.js';
-import { CORRELATION_HEADER } from './correlationId.js';
+import { logger } from '../logger';
+import { CORRELATION_HEADER } from './correlationId';
 
 export const requestLogger = pinoHttp({
   logger,
@@ -10,8 +10,9 @@ export const requestLogger = pinoHttp({
     if (res.statusCode >= 400) return 'warn';
     return 'info';
   },
+  // Use snake_case to match IAM's logging format for cross-service querying
   customProps: (req) => ({
-    correlationId: (req as any).correlationId ?? req.headers[CORRELATION_HEADER],
+    correlation_id: (req as any).correlationId ?? req.headers[CORRELATION_HEADER],
   }),
 });
 

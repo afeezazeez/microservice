@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { config } from '../config.js';
-import { CORRELATION_HEADER } from '../middleware/correlationId.js';
+import { config } from '../config';
+import { CORRELATION_HEADER } from '../middleware/correlationId';
 
 export function createHttpClient(baseURL: string): AxiosInstance {
   const client = axios.create({

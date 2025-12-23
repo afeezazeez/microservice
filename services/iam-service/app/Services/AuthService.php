@@ -38,8 +38,8 @@ class AuthService
             'name' => $companyData['name'],
             'identifier' => $identifier,
             'email' => $companyData['email'],
-            'phone' => $companyData['phone'] ,
-            'address' => $companyData['address'] ,
+            'phone' => $companyData['phone'] ?? null,
+            'address' => $companyData['address'] ?? null,
         ]);
 
         $user = $this->userRepository->create([

@@ -1,6 +1,6 @@
 import { AxiosInstance } from 'axios';
-import { config } from '../config.js';
-import { createHttpClient, mapUpstreamError, UpstreamResult } from './httpClient.js';
+import { config } from '../config';
+import { createHttpClient, mapUpstreamError, UpstreamResult } from './httpClient';
 
 const iamClient: AxiosInstance = createHttpClient(config.iamBaseUrl);
 
@@ -23,6 +23,17 @@ export async function refresh(payload: any, correlationId?: string): Promise<Ups
     return response;
   } catch (error) {
     throw mapUpstreamError(error, 'Token refresh failed');
+  }
+}
+
+export async function register(payload: any, correlationId?: string): Promise<UpstreamResult> {
+  try {
+    const response = await iamClient.post('/api/auth/register', payload, {
+      correlationId,
+    } as any);
+    return response;
+  } catch (error) {
+    throw mapUpstreamError(error, 'Registration failed');
   }
 }
 

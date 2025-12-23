@@ -1,13 +1,11 @@
 import express from 'express';
 import helmet from 'helmet';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { correlationIdMiddleware } from './middleware/correlationId.js';
-import { requestLoggerMiddleware } from './middleware/requestLogger.js';
-import { authRouter } from './routes/auth.js';
+import { correlationIdMiddleware } from './middleware/correlationId';
+import { requestLoggerMiddleware } from './middleware/requestLogger';
+import { authRouter } from './routes/auth';
 
 const app = express();
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, '../public');
 
 app.use(helmet());

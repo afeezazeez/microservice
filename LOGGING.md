@@ -198,12 +198,29 @@ This gives you a **complete end-to-end trace** of a single user action!
 
 Because the correlation ID is included in all logs for a request, once other services adopt the same pattern (Node microservices + API Gateway), you’ll be able to:
 
-- Pass `X-Correlation-Id` from **frontend → API Gateway → Services**.
+- **API Gateway** generates `X-Correlation-Id` and passes it to downstream services.
+- The ID is returned to the frontend in response headers (useful for bug reports).
 - Filter by that ID in Grafana and see the full cross‑service trace.
+
+## Consistent Field Naming Across Services
+
+All services in this project log the correlation ID using the **same snake_case field name**: `correlation_id`.
+
+| Service       | Logger           | Field Name       | Example Output                              |
+|---------------|------------------|------------------|---------------------------------------------|
+| IAM (Laravel) | Monolog + JSON   | `correlation_id` | `{"context":{"correlation_id":"abc-123"}}` |
+| API Gateway   | Pino             | `correlation_id` | `{"correlation_id":"abc-123"}`              |
+| Node Services | Pino (planned)   | `correlation_id` | `{"correlation_id":"abc-123"}`              |
+
+This consistency ensures you can query across **all services** with a single Grafana/Loki query:
+
+```logql
+{container_name=~".+"} | json | correlation_id="<your-id>"
+```
 
 ## Extending to Other Services (Pattern)
 
-When we implement the Node services and API Gateway, we’ll mirror the same pattern:
+When we implement the Node services, we'll mirror the same pattern used by API Gateway:
 
 - Express middleware that:
   - Reads or generates `X-Correlation-Id`.

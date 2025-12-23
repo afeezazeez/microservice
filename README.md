@@ -99,15 +99,17 @@ I front services with Traefik so you can hit friendly hostnames over HTTPS local
 ### Host entries
 Add these to your hosts file (copy/paste ready):
 ```
+127.0.0.1 app.afeez-dev.local
+127.0.0.1 app.afeez-dev.local
+127.0.0.1 api-gateway.afeez-dev.local
 127.0.0.1 iam-service.afeez-dev.local
-127.0.0.1 minio.afeez-dev.local
-127.0.0.1 rabbitmq.afeez-dev.local
 127.0.0.1 project-service.afeez-dev.local
 127.0.0.1 task-service.afeez-dev.local
 127.0.0.1 notification-service.afeez-dev.local
 127.0.0.1 file-service.afeez-dev.local
 127.0.0.1 analytics-service.afeez-dev.local
-127.0.0.1 api-gateway.afeez-dev.local
+127.0.0.1 minio.afeez-dev.local
+127.0.0.1 rabbitmq.afeez-dev.local
 127.0.0.1 grafana.afeez-dev.local
 ```
 
@@ -136,6 +138,7 @@ mkdir -p infra/traefik/certs
 
 mkcert -install
 mkcert -key-file infra/traefik/certs/local-key.pem -cert-file infra/traefik/certs/local-cert.pem \
+  app.afeez-dev.local \
   iam-service.afeez-dev.local \
   minio.afeez-dev.local \
   rabbitmq.afeez-dev.local \
@@ -150,6 +153,7 @@ mkcert -key-file infra/traefik/certs/local-key.pem -cert-file infra/traefik/cert
 3) Start the stack (`make setup` or `make up`). Traefik serves HTTPS using those certs.
 
 ### Access URLs (once running)
+- **Frontend App**: https://app.afeez-dev.local (proxy) or http://localhost:5173 (direct)
 - IAM: https://iam-service.afeez-dev.local (proxy) or http://localhost:8001 (direct)
 - API Gateway: https://api-gateway.afeez-dev.local (proxy) or http://localhost:3000 (direct)
 - Project Service: https://project-service.afeez-dev.local (proxy) or http://localhost:3001 (direct)
@@ -173,14 +177,6 @@ mkcert -key-file infra/traefik/certs/local-key.pem -cert-file infra/traefik/cert
 | Analytics Service      | https://analytics-service.afeez-dev.local     | 3005           | Implemented  |
 | MinIO Console          | https://minio.afeez-dev.local                 | 9001           | Implemented  |
 | RabbitMQ Console       | https://rabbitmq.afeez-dev.local              | 15672          | Implemented  |
-
-## Testing (IAM)
-
-- Quick run: `make iam-test`  
-  - Forces `.env.testing` (sqlite in-memory, null logging) inside the container  
-  - Clears cached config, then runs `composer test`  
-  - Keeps MySQL untouched and silences test logs
-- Ensure `services/iam-service/.env.testing` exists locally (not committed). Example is documented in `SETUP.md`.
 
 ## Getting Started
 
@@ -226,7 +222,33 @@ make iam-setup     # Setup IAM service (migrate + seed + swagger)
 make iam-migrate   # Run IAM migrations only
 make iam-seed      # Run IAM seeders only
 make iam-swagger   # Generate IAM Swagger docs only
+make iam-test      # Run IAM service tests
 ```
+
+## Testing
+
+### IAM Service (Laravel/PHPUnit)
+
+Uses in-memory SQLite database and mocked dependencies:
+```bash
+make iam-test
+```
+
+### API Gateway (Node/Vitest)
+
+Uses mocked upstream services (no real HTTP calls):
+```bash
+cd services/api-gateway
+npm test
+```
+
+Tests verify:
+- Route proxying to IAM
+- Auth middleware behavior
+- Correlation ID propagation
+- Error handling
+
+Both test suites silence logs automatically.
 
 ### Manual Setup (without Make)
 

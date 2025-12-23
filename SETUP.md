@@ -7,6 +7,7 @@ I front services with Traefik so you can hit friendly hostnames over HTTPS local
 ### Host entries
 Add these to your hosts file (copy/paste ready):
 ```
+127.0.0.1 app.afeez-dev.local
 127.0.0.1 iam-service.afeez-dev.local
 127.0.0.1 minio.afeez-dev.local
 127.0.0.1 rabbitmq.afeez-dev.local
@@ -33,6 +34,7 @@ mkdir -p infra/traefik/certs
 
 mkcert -install
 mkcert -key-file infra/traefik/certs/local-key.pem -cert-file infra/traefik/certs/local-cert.pem \
+  app.afeez-dev.local \
   iam-service.afeez-dev.local \
   minio.afeez-dev.local \
   rabbitmq.afeez-dev.local \
@@ -47,6 +49,7 @@ mkcert -key-file infra/traefik/certs/local-key.pem -cert-file infra/traefik/cert
 3) Start the stack (`make setup` or `make up`). Traefik serves HTTPS using those certs.
 
 ### Access URLs (once running)
+- **Frontend App**: https://app.afeez-dev.local (proxy) or http://localhost:5173 (direct)
 - IAM: https://iam-service.afeez-dev.local (proxy) or http://localhost:8001 (direct)
 - API Gateway: https://api-gateway.afeez-dev.local (proxy) or http://localhost:3000 (direct)
 - Project Service: https://project-service.afeez-dev.local (proxy) or http://localhost:3001 (direct)
@@ -91,6 +94,39 @@ Run tests (uses composer/PhpUnit in-container, in-memory DB, silent logs):
 ```bash
 make iam-test
 ```
+
+### Testing API Gateway (`services/api-gateway`)
+
+The API Gateway uses **Vitest** for testing. Tests mock upstream services (IAM, etc.) so they run fast without dependencies.
+
+**What's tested:**
+- Route proxying (login, register, refresh, me, logout)
+- Auth middleware (token validation via mocked IAM)
+- Correlation ID propagation
+- Error handling
+
+**Run tests locally:**
+```bash
+cd services/api-gateway
+npm test
+```
+
+**How mocking works:**
+
+Tests use `vi.mock()` to replace real HTTP calls with mocks:
+```typescript
+vi.mock('../proxy/iamProxy');
+const mockedIam = vi.mocked(iamProxy);
+
+mockedIam.login = vi.fn().mockResolvedValue({
+  status: 200,
+  data: { success: true, token: 'abc' },
+});
+```
+
+This means tests verify the gateway's routing/middleware logic **without** hitting real services.
+
+**Logs are silenced** during tests (log level set to `silent` when `NODE_ENV=test`).
 
 ### Quick Setup
 

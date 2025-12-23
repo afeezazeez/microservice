@@ -5,6 +5,12 @@ tls:
 
 http:
   routers:
+    frontend:
+      rule: "Host(`app.afeez-dev.local`)"
+      entryPoints: ["websecure"]
+      service: frontend
+      tls: {}
+
     iam:
       rule: "Host(`iam-service.afeez-dev.local`)"
       entryPoints: ["websecure"]
@@ -66,6 +72,11 @@ http:
       tls: {}
 
   services:
+    frontend:
+      loadBalancer:
+        servers:
+          - url: "http://task-frontend:80"
+
     iam:
       loadBalancer:
         servers:
@@ -115,4 +126,3 @@ http:
       loadBalancer:
         servers:
           - url: "http://task-grafana:3000"
-

@@ -132,6 +132,18 @@ services:
     networks:
       - microservices-network
 
+  frontend:
+    build:
+      context: ./services/frontend
+      dockerfile: Dockerfile
+    container_name: task-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - microservices-network
+
   loki:
     image: grafana/loki:2.9.8
     container_name: task-loki

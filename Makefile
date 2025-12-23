@@ -1,6 +1,6 @@
 .PHONY: help setup build up down restart logs clean \
 	iam-setup iam-up iam-migrate iam-seed iam-swagger iam-test \
-	project-setup task-setup notification-setup file-setup analytics-setup api-gateway-setup \
+	project-setup task-setup notification-setup file-setup analytics-setup api-gateway-setup frontend-setup \
 	status
 
 # Colors
@@ -15,7 +15,7 @@ help: ## Show this help message
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(YELLOW)%-15s$(NC) %s\n", $$1, $$2}'
 
-setup: build up iam-setup project-setup task-setup notification-setup file-setup analytics-setup api-gateway-setup status ## Full setup: build images, start services, migrate, seed, docs
+setup: build up iam-setup project-setup task-setup notification-setup file-setup analytics-setup api-gateway-setup frontend-setup status ## Full setup: build images, start services, migrate, seed, docs
 
 build: ## Build all images
 	@echo "$(BLUE)🔨 Building images...$(NC)"
@@ -23,7 +23,7 @@ build: ## Build all images
 
 up: ## Start all Docker containers (infra + services)
 	@echo "$(BLUE)📦 Starting Docker containers...$(NC)"
-	@docker-compose up -d --build traefik mysql redis rabbitmq minio loki promtail grafana iam-service iam-nginx api-gateway || echo "$(YELLOW)⚠️  Some services may not be available yet$(NC)"
+	@docker-compose up -d --build traefik mysql redis rabbitmq minio loki promtail grafana iam-service iam-nginx api-gateway frontend || echo "$(YELLOW)⚠️  Some services may not be available yet$(NC)"
 	@echo "$(BLUE)⏳ Waiting for services to be healthy...$(NC)"
 	@sleep 10
 
@@ -53,7 +53,7 @@ iam-setup: iam-up iam-migrate iam-seed iam-swagger ## Setup IAM service (start, 
 
 iam-up: ## Start IAM service and its deps
 	@echo "$(BLUE)🚀 Starting IAM service and dependencies...$(NC)"
-	@docker-compose up -d --build traefik mysql redis rabbitmq minio loki promtail grafana iam-service iam-nginx api-gateway || echo "$(YELLOW)⚠️  IAM may not be available yet$(NC)"
+	@docker-compose up -d --build traefik mysql redis rabbitmq minio loki promtail grafana iam-service iam-nginx api-gateway frontend || echo "$(YELLOW)⚠️  IAM may not be available yet$(NC)"
 	@echo "$(BLUE)⏳ Waiting for IAM stack to be healthy...$(NC)"
 	@sleep 8
 
@@ -109,6 +109,10 @@ api-gateway-setup:
 	@echo "$(BLUE)📦 Installing API Gateway deps...$(NC)"
 	@cd services/api-gateway && npm install
 
+frontend-setup:
+	@echo "$(BLUE)📦 Installing Frontend deps...$(NC)"
+	@cd services/frontend && npm install
+
 status: ## Display all service URLs and documentation links
 	@echo ""
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -160,6 +164,11 @@ status: ## Display all service URLs and documentation links
 		echo "    🌐 API:  https://api-gateway.afeez-dev.local"; \
 		echo "    📚 Docs: https://api-gateway.afeez-dev.local/api/docs"; \
 		echo "    ↪️  Proxies IAM: https://iam-service.afeez-dev.local"; \
+		echo ""; \
+	fi
+	@if docker-compose ps | grep -q "frontend.*Up"; then \
+		echo "$(YELLOW)✓ Frontend (Vue 3 + TypeScript)$(NC)"; \
+		echo "    🌐 App:  https://app.afeez-dev.local"; \
 		echo ""; \
 	fi
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
