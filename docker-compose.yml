@@ -118,6 +118,20 @@ services:
     networks:
       - microservices-network
 
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: task-api-gateway
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./services/api-gateway/.env
+    depends_on:
+      - iam-service
+    networks:
+      - microservices-network
+
   loki:
     image: grafana/loki:2.9.8
     container_name: task-loki

@@ -23,7 +23,7 @@ build: ## Build all images
 
 up: ## Start all Docker containers (infra + services)
 	@echo "$(BLUE)📦 Starting Docker containers...$(NC)"
-	@docker-compose up -d --build traefik mysql redis rabbitmq minio loki promtail grafana iam-service iam-nginx || echo "$(YELLOW)⚠️  Some services may not be available yet$(NC)"
+	@docker-compose up -d --build traefik mysql redis rabbitmq minio loki promtail grafana iam-service iam-nginx api-gateway || echo "$(YELLOW)⚠️  Some services may not be available yet$(NC)"
 	@echo "$(BLUE)⏳ Waiting for services to be healthy...$(NC)"
 	@sleep 10
 
@@ -32,6 +32,15 @@ down: ## Stop all Docker containers
 	docker-compose down
 
 restart: down up ## Restart all services
+
+restart-container: ## Restart a container (optional SERVICE=iam-service). If SERVICE is empty, restarts all.
+	@if [ -z "$(SERVICE)" ]; then \
+		echo "$(BLUE)🔄 Restarting all containers...$(NC)"; \
+		docker-compose restart; \
+	else \
+		echo "$(BLUE)🔄 Restarting container '$(SERVICE)'...$(NC)"; \
+		docker-compose restart $(SERVICE); \
+	fi
 
 logs: ## Show logs from all services
 	docker-compose logs -f
@@ -44,7 +53,7 @@ iam-setup: iam-up iam-migrate iam-seed iam-swagger ## Setup IAM service (start, 
 
 iam-up: ## Start IAM service and its deps
 	@echo "$(BLUE)🚀 Starting IAM service and dependencies...$(NC)"
-	@docker-compose up -d --build traefik mysql redis rabbitmq minio loki promtail grafana iam-service iam-nginx || echo "$(YELLOW)⚠️  IAM may not be available yet$(NC)"
+	@docker-compose up -d --build traefik mysql redis rabbitmq minio loki promtail grafana iam-service iam-nginx api-gateway || echo "$(YELLOW)⚠️  IAM may not be available yet$(NC)"
 	@echo "$(BLUE)⏳ Waiting for IAM stack to be healthy...$(NC)"
 	@sleep 8
 
@@ -97,7 +106,8 @@ analytics-setup:
 	@echo "$(YELLOW)⚠️  Analytics service setup is not implemented yet (skipping).$(NC)"
 
 api-gateway-setup:
-	@echo "$(YELLOW)⚠️  API Gateway setup is not implemented yet (skipping).$(NC)"
+	@echo "$(BLUE)📦 Installing API Gateway deps...$(NC)"
+	@cd services/api-gateway && npm install
 
 status: ## Display all service URLs and documentation links
 	@echo ""
@@ -149,6 +159,7 @@ status: ## Display all service URLs and documentation links
 		echo "$(YELLOW)✓ API Gateway (Node.js)$(NC)"; \
 		echo "    🌐 API:  https://api-gateway.afeez-dev.local"; \
 		echo "    📚 Docs: https://api-gateway.afeez-dev.local/api/docs"; \
+		echo "    ↪️  Proxies IAM: https://iam-service.afeez-dev.local"; \
 		echo ""; \
 	fi
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
