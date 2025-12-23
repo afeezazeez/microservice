@@ -64,6 +64,34 @@ mkcert -key-file infra/traefik/certs/local-key.pem -cert-file infra/traefik/cert
 
 Each service has its own `.env` file. Copy the `.env.example` files and customize them.
 
+### Testing (`services/iam-service/.env.testing`)
+
+Create `services/iam-service/.env.testing` locally (do not commit) with:
+```env
+APP_ENV=testing
+APP_DEBUG=false
+APP_URL=http://localhost
+
+LOG_CHANNEL=null
+LOG_STACK=null
+LOG_LEVEL=emergency
+LOG_DEPRECATIONS_CHANNEL=null
+LOG_DEPRECATIONS_TRACE=false
+
+DB_CONNECTION=sqlite
+DB_DATABASE=:memory:
+
+CACHE_STORE=array
+QUEUE_CONNECTION=sync
+SESSION_DRIVER=array
+MAIL_MAILER=array
+```
+
+Run tests (uses composer/PhpUnit in-container, in-memory DB, silent logs):
+```bash
+make iam-test
+```
+
 ### Quick Setup
 
 ```bash

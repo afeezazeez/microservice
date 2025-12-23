@@ -152,7 +152,11 @@ class AuthController extends Controller
     )]
     public function me()
     {
-        $userId = request()->input('user_id');
+        $userId = request()->input('authenticated_user_id') ?? request()->input('user_data.id');
+        
+        if (!$userId) {
+            return errorResponse('User not authenticated', [], null, [], 401);
+        }
         
         $user = $this->authService->getAuthenticatedUser($userId);
 

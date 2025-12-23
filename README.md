@@ -174,6 +174,14 @@ mkcert -key-file infra/traefik/certs/local-key.pem -cert-file infra/traefik/cert
 | MinIO Console          | https://minio.afeez-dev.local                 | 9001           | Implemented  |
 | RabbitMQ Console       | https://rabbitmq.afeez-dev.local              | 15672          | Implemented  |
 
+## Testing (IAM)
+
+- Quick run: `make iam-test`  
+  - Forces `.env.testing` (sqlite in-memory, null logging) inside the container  
+  - Clears cached config, then runs `composer test`  
+  - Keeps MySQL untouched and silences test logs
+- Ensure `services/iam-service/.env.testing` exists locally (not committed). Example is documented in `SETUP.md`.
+
 ## Getting Started
 
 ### Prerequisites

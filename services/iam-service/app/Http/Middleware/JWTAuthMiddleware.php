@@ -32,15 +32,12 @@ class JWTAuthMiddleware
         }
 
         $userId = $decoded['id'] ?? null;
-        $companyId = $decoded['company_id'] ?? null;
-
-        Log::withContext([
-            'user_id' => $userId,
-            'company_id' => $companyId,
+      
+        // Preserve original request payload; expose authenticated user under dedicated keys
+        $request->merge([
+            'authenticated_user_id' => $userId,
+            'user_data' => $decoded,
         ]);
-
-        $request->merge(['user_id' => $userId]);
-        $request->merge(['user_data' => $decoded]);
 
         return $next($request);
     }

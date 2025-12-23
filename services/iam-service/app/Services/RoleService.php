@@ -87,6 +87,8 @@ class RoleService
         return $userRoles->map(function ($userRole) {
             return [
                 'id' => $userRole->id,
+                'user_id' => $userRole->user_id,
+                'role_id' => $userRole->role_id,
                 'role' => [
                     'id' => $userRole->role->id,
                     'name' => $userRole->role->name,

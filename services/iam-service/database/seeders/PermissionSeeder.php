@@ -99,6 +99,12 @@ class PermissionSeeder extends Seeder
                 'description' => 'Invite users to company',
             ],
             [
+                'name' => 'Create User',
+                'slug' => 'user:create',
+                'resource_type' => 'user',
+                'description' => 'Create new users within the company',
+            ],
+            [
                 'name' => 'Update User',
                 'slug' => 'user:update',
                 'resource_type' => 'user',

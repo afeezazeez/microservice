@@ -1,5 +1,5 @@
 .PHONY: help setup build up down restart logs clean \
-	iam-setup iam-up iam-migrate iam-seed iam-swagger \
+	iam-setup iam-up iam-migrate iam-seed iam-swagger iam-test \
 	project-setup task-setup notification-setup file-setup analytics-setup api-gateway-setup \
 	status
 
@@ -59,6 +59,26 @@ iam-seed: ## Run IAM service seeders
 iam-swagger: ## Generate Swagger documentation for IAM service
 	@echo "$(BLUE)📚 Generating Swagger documentation...$(NC)"
 	@docker-compose exec -T iam-service php artisan l5-swagger:generate || echo "$(YELLOW)⚠️  Swagger generation may need manual run$(NC)"
+
+iam-test: ## Run IAM service tests (composer test) with test override
+	@echo "$(BLUE)🧪 Running IAM service tests...$(NC)"
+	@docker-compose exec -T \
+		-e APP_ENV=testing \
+		-e DB_CONNECTION=sqlite \
+		-e DB_DATABASE=:memory: \
+		-e CACHE_STORE=array \
+		-e QUEUE_CONNECTION=sync \
+		-e SESSION_DRIVER=array \
+		-e MAIL_MAILER=array \
+		-e LOG_CHANNEL=null \
+		-e LOG_STACK=null \
+		-e LOG_LEVEL=emergency \
+		-e LOG_DEPRECATIONS_CHANNEL=null \
+		-e LOG_DEPRECATIONS_TRACE=false \
+		iam-service sh -c "rm -f bootstrap/cache/config.php && php artisan config:clear && composer test" || echo "$(YELLOW)⚠️  Tests failed$(NC)"
+
+
+
 
 # Placeholder setups for services not yet implemented
 project-setup:
