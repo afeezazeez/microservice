@@ -17,11 +17,15 @@ export interface User {
   }>
 }
 
-export interface AuthTokens {
-  access_token: string
-  refresh_token: string
-  token_type: string
-  expires_in: number
+export interface RegisterResponse {
+  user: User
+  company: { id: number; name: string; identifier: string; email: string }
+  token: string
+}
+
+export interface LoginResponse {
+  user: User
+  token: string
 }
 
 export interface RegisterPayload {
@@ -43,12 +47,12 @@ export interface LoginPayload {
 }
 
 export const authApi = {
-  async register(payload: RegisterPayload): Promise<ApiResponse<{ company: { id: number; name: string }; user: User; tokens: AuthTokens }>> {
+  async register(payload: RegisterPayload): Promise<ApiResponse<RegisterResponse>> {
     const { data } = await apiClient.post('/auth/register', payload)
     return data
   },
 
-  async login(payload: LoginPayload): Promise<ApiResponse<AuthTokens & { user: User }>> {
+  async login(payload: LoginPayload): Promise<ApiResponse<LoginResponse>> {
     const { data } = await apiClient.post('/auth/login', payload)
     return data
   },
@@ -63,8 +67,8 @@ export const authApi = {
     return data
   },
 
-  async refresh(refreshToken: string): Promise<ApiResponse<AuthTokens>> {
-    const { data } = await apiClient.post('/auth/refresh', { refresh_token: refreshToken })
+  async refresh(token: string): Promise<ApiResponse<{ token: string }>> {
+    const { data } = await apiClient.post('/auth/refresh', { token })
     return data
   },
 }

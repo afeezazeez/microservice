@@ -23,44 +23,14 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// Response interceptor: handle errors globally
+// Response interceptor: handle 401 errors
 apiClient.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError<{ message?: string; error_message?: string }>) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
-
-    // Handle 401 - try refresh token
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true
-      const refreshToken = localStorage.getItem('refresh_token')
-      
-      if (refreshToken) {
-        try {
-          const { data } = await axios.post(`${API_BASE}/auth/refresh`, {
-            refresh_token: refreshToken,
-          })
-          
-          if (data.success && data.data?.access_token) {
-            localStorage.setItem('access_token', data.data.access_token)
-            if (data.data.refresh_token) {
-              localStorage.setItem('refresh_token', data.data.refresh_token)
-            }
-            
-            // Retry original request
-            if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${data.data.access_token}`
-            }
-            return apiClient(originalRequest)
-          }
-        } catch {
-          // Refresh failed, clear tokens
-          localStorage.removeItem('access_token')
-          localStorage.removeItem('refresh_token')
-          window.location.href = '/login'
-        }
-      }
+  (error: AxiosError<{ message?: string; error_message?: string }>) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('access_token')
+      window.location.href = '/login'
     }
-
     return Promise.reject(error)
   }
 )

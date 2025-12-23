@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi, type User, type LoginPayload, type RegisterPayload } from '@/api/auth'
-import { toast } from 'vue-sonner'
+import { showSuccess, showError } from '@/utils/toast'
 import router from '@/router'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -26,9 +26,7 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = response.data
       }
     } catch {
-      // Token invalid, clear it
       localStorage.removeItem('access_token')
-      localStorage.removeItem('refresh_token')
     } finally {
       loading.value = false
       initialized.value = true
@@ -41,15 +39,12 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authApi.register(payload)
       
       if (response.success && response.data) {
-        const { tokens, user: userData } = response.data
+        const { token, user: userData, company } = response.data
         
-        localStorage.setItem('access_token', tokens.access_token)
-        localStorage.setItem('refresh_token', tokens.refresh_token)
+        localStorage.setItem('access_token', token)
         user.value = userData
         
-        toast.success('Account created!', {
-          description: `Welcome to ${response.data.company.name}, ${userData.name}!`,
-        })
+        showSuccess(`Account created! Welcome to ${company.name}, ${userData.name}!`)
         
         router.push('/dashboard')
         return { success: true }
@@ -58,7 +53,7 @@ export const useAuthStore = defineStore('auth', () => {
       return { success: false, message: response.message }
     } catch (error: any) {
       const message = error.response?.data?.error_message || error.response?.data?.message || 'Registration failed'
-      toast.error('Registration failed', { description: message })
+      showError(`Registration failed: ${message}`)
       return { success: false, message, errors: error.response?.data?.errors }
     } finally {
       loading.value = false
@@ -71,15 +66,12 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authApi.login(payload)
       
       if (response.success && response.data) {
-        const { access_token, refresh_token, user: userData } = response.data
+        const { token, user: userData } = response.data
         
-        localStorage.setItem('access_token', access_token)
-        localStorage.setItem('refresh_token', refresh_token)
+        localStorage.setItem('access_token', token)
         user.value = userData
         
-        toast.success('Welcome back!', {
-          description: `Logged in as ${userData.email}`,
-        })
+        showSuccess(`Welcome back! Logged in as ${userData.email}`)
         
         router.push('/dashboard')
         return { success: true }
@@ -88,7 +80,7 @@ export const useAuthStore = defineStore('auth', () => {
       return { success: false, message: response.message }
     } catch (error: any) {
       const message = error.response?.data?.error_message || error.response?.data?.message || 'Login failed'
-      toast.error('Login failed', { description: message })
+      showError(`Login failed: ${message}`)
       return { success: false, message }
     } finally {
       loading.value = false
@@ -99,13 +91,12 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     try {
       await authApi.logout()
-      toast.success('Logged out', { description: 'See you next time!' })
+      showSuccess('Logged out. See you next time!')
     } catch {
       // Logout failed on server, but we'll clear local state anyway
     } finally {
       user.value = null
       localStorage.removeItem('access_token')
-      localStorage.removeItem('refresh_token')
       loading.value = false
       router.push('/login')
     }
