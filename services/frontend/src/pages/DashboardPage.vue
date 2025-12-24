@@ -80,7 +80,7 @@ function handleLogout() {
             </div>
             <div>
               <p class="text-sm text-zinc-400">Company</p>
-              <p class="text-xl font-semibold text-white">{{ authStore.user?.company?.name || 'N/A' }}</p>
+              <p class="text-xl font-semibold text-white">{{ authStore.user?.company_name || 'N/A' }}</p>
             </div>
           </div>
         </div>
@@ -95,7 +95,7 @@ function handleLogout() {
             <div>
               <p class="text-sm text-zinc-400">Roles</p>
               <p class="text-xl font-semibold text-white">
-                {{ authStore.user?.roles?.map(r => r.name).join(', ') || 'No roles' }}
+                {{ authStore.user?.roles?.length ? authStore.user.roles.join(', ') : 'No roles' }}
               </p>
             </div>
           </div>

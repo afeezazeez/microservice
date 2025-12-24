@@ -90,6 +90,16 @@ class AuthService
             throw new ClientErrorException('Invalid credentials');
         }
 
+        // Load company relation
+        $user->load('company');
+
+        // Get user's company-level roles
+        $roles = $user->roles()
+            ->where('user_roles.company_id', $user->company_id)
+            ->whereNull('user_roles.resource_type')
+            ->pluck('slug')
+            ->toArray();
+
         $token = $this->jwtService->generateToken($user);
 
         return [
@@ -98,6 +108,8 @@ class AuthService
                 'name' => $user->name,
                 'email' => $user->email,
                 'company_id' => $user->company_id,
+                'company_name' => $user->company?->name,
+                'roles' => $roles,
             ],
             'token' => $token,
         ];

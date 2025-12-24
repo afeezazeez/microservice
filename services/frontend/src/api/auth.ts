@@ -5,16 +5,12 @@ export interface User {
   email: string
   name: string
   company_id: number
-  company?: {
-    id: number
-    name: string
-    slug: string
-  }
-  roles?: Array<{
-    id: number
-    name: string
-    slug: string
-  }>
+  company_name: string | null
+  roles: string[]
+}
+
+export interface MeResponse {
+  user: User
 }
 
 export interface RegisterResponse {
@@ -57,12 +53,7 @@ export const authApi = {
     return data
   },
 
-  async logout(): Promise<ApiResponse> {
-    const { data } = await apiClient.post('/auth/logout')
-    return data
-  },
-
-  async me(): Promise<ApiResponse<User>> {
+  async me(): Promise<ApiResponse<MeResponse>> {
     const { data } = await apiClient.get('/auth/me')
     return data
   },

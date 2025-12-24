@@ -16,7 +16,7 @@ router.post('/login', async (req, res) => {
 });
 
 router.get('/me', authMiddleware, (req, res) => {
-  return res.json({ success: true, data: (req as any).user });
+  return res.json({ success: true, data: { user: (req as any).user } });
 });
 
 router.post('/refresh', async (req, res) => {

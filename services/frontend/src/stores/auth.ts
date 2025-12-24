@@ -22,8 +22,8 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       loading.value = true
       const response = await authApi.me()
-      if (response.success && response.data) {
-        user.value = response.data
+      if (response.success && response.data?.user) {
+        user.value = response.data.user
       }
     } catch {
       localStorage.removeItem('access_token')
@@ -87,19 +87,11 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function logout() {
-    loading.value = true
-    try {
-      await authApi.logout()
-      showSuccess('Logged out. See you next time!')
-    } catch {
-      // Logout failed on server, but we'll clear local state anyway
-    } finally {
-      user.value = null
-      localStorage.removeItem('access_token')
-      loading.value = false
-      router.push('/login')
-    }
+  function logout() {
+    user.value = null
+    localStorage.removeItem('access_token')
+    showSuccess('Logged out. See you next time!')
+    router.push('/login')
   }
 
   return {
