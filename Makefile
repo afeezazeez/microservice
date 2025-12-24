@@ -113,7 +113,7 @@ project-swagger: ## Generate Swagger docs for Project service
 
 api-gateway-test: ## Run API Gateway tests
 	@echo "$(BLUE)🧪 Running API Gateway tests...$(NC)"
-	@docker-compose exec -T api-gateway npm run test || echo "$(YELLOW)⚠️  Tests failed$(NC)"
+	@docker-compose run --rm --no-deps api-gateway npm run test || echo "$(YELLOW)⚠️  Tests failed$(NC)"
 
 task-setup:
 	@echo "$(YELLOW)⚠️  Task service setup is not implemented yet (skipping).$(NC)"

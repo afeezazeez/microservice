@@ -1,16 +1,29 @@
 import { Request, Response, NextFunction } from 'express';
-import axios from 'axios';
+import jwt from 'jsonwebtoken';
 import configService from '../utils/config/config.service';
 import { AuthenticationException } from '../exceptions/authentication.exception';
 import { WinstonLogger } from '../utils/logger/winston.logger';
 
 const Logger = new WinstonLogger('AuthMiddleware');
 
+export interface JwtPayload {
+  id: number;
+  email: string;
+  name: string;
+  company_id: number;
+  company_name?: string | null;
+  roles?: string[];
+  iat: number;
+  exp: number;
+}
+
 export interface AuthenticatedUser {
   id: number;
   email: string;
   name: string;
   company_id: number;
+  company_name?: string | null;
+  roles?: string[];
 }
 
 export interface AuthenticatedRequest extends Request {
@@ -35,19 +48,20 @@ export async function authMiddleware(
     const token = authHeader.substring(7);
     const correlationId = req.headers[CORRELATION_HEADER] as string;
 
-    const response = await axios.get(`${configService.iamServiceUrl}/api/auth/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        [CORRELATION_HEADER]: correlationId,
-      },
-      timeout: 5000,
-    });
+    // Decode and verify JWT token directly
+    // Note: API Gateway already validates tokens, so bad tokens shouldn't reach here
+    const decoded = jwt.verify(token, configService.jwtSecret) as JwtPayload;
 
-    if (!response.data?.success || !response.data?.data) {
-      throw new AuthenticationException('Invalid token');
-    }
+    // Extract user data from JWT payload
+    req.user = {
+      id: decoded.id,
+      email: decoded.email,
+      name: decoded.name,
+      company_id: decoded.company_id,
+      company_name: decoded.company_name,
+      roles: decoded.roles || [],
+    } as AuthenticatedUser;
 
-    req.user = response.data.data as AuthenticatedUser;
     req.correlationId = correlationId;
 
     next();
@@ -57,15 +71,22 @@ export async function authMiddleware(
       return;
     }
 
-    if (axios.isAxiosError(error)) {
-      const status = error.response?.status;
-      if (status === 401) {
-        next(new AuthenticationException('Invalid or expired token'));
-        return;
-      }
-            Logger.error('IAM service error', { error: error.message });
+    if (error instanceof jwt.TokenExpiredError) {
+      next(new AuthenticationException('Token expired'));
+      return;
     }
 
+    if (error instanceof jwt.JsonWebTokenError) {
+      next(new AuthenticationException('Invalid token'));
+      return;
+    }
+
+    if (error instanceof jwt.NotBeforeError) {
+      next(new AuthenticationException('Token not active'));
+      return;
+    }
+
+    Logger.error('Authentication error', { error: error instanceof Error ? error.message : 'Unknown error' });
     next(new AuthenticationException('Authentication failed'));
   }
 }

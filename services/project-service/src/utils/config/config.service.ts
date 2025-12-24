@@ -44,8 +44,12 @@ class ConfigService {
     };
   }
 
-  get iamServiceUrl(): string {
-    return this.get('IAM_SERVICE_URL', 'http://iam-nginx:80');
+  get jwtSecret(): string {
+    const secret = this.get('JWT_SECRET');
+    if (!secret) {
+      throw new Error('JWT_SECRET is required but not set in environment variables');
+    }
+    return secret;
   }
 
   get redis() {

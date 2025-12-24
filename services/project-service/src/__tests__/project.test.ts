@@ -1,11 +1,11 @@
 import request from 'supertest';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import axios from 'axios';
+import jwt from 'jsonwebtoken';
 import { ProjectService } from '../services/project.service';
 import Project from '../database/models/Project';
 import ProjectMember from '../database/models/ProjectMember';
 
-vi.mock('axios');
+vi.mock('jsonwebtoken');
 vi.mock('../config/database/database.config', () => ({
   default: {
     authenticate: vi.fn().mockResolvedValue(undefined),
@@ -35,7 +35,7 @@ vi.mock('../services/project.service', () => {
   };
 });
 
-const mockedAxios = vi.mocked(axios);
+const mockedJwt = vi.mocked(jwt);
 
 // Import app after mocks are set up
 import app from '../app';
@@ -46,6 +46,20 @@ const mockUser = {
   email: 'test@example.com',
   name: 'Test User',
   company_id: 1,
+  company_name: 'Test Company',
+  roles: ['user'],
+};
+
+// Mock JWT payload
+const mockJwtPayload = {
+  id: mockUser.id,
+  email: mockUser.email,
+  name: mockUser.name,
+  company_id: mockUser.company_id,
+  company_name: mockUser.company_name,
+  roles: mockUser.roles,
+  iat: Math.floor(Date.now() / 1000),
+  exp: Math.floor(Date.now() / 1000) + 3600,
 };
 
 // Helper to generate auth headers
@@ -91,12 +105,8 @@ describe('Project API', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     
-    mockedAxios.get = vi.fn().mockResolvedValue({
-      data: {
-        success: true,
-        data: mockUser,
-      },
-    });
+    // Mock JWT verification to return our mock payload
+    mockedJwt.verify = vi.fn().mockReturnValue(mockJwtPayload);
   });
 
   describe('POST /api/projects', () => {
