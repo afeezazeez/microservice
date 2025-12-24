@@ -6,7 +6,6 @@ import { AddMemberDto } from '../dtos/project/add-member.dto';
 import { ClientErrorException } from '../exceptions/client.error.exception';
 import { ResponseStatus } from '../enums/http-status-codes';
 import { ProjectStatus } from '../enums/project-status.enum';
-import { ProjectRole } from '../enums/project-role.enum';
 import Project from '../database/models/Project';
 import ProjectMember from '../database/models/ProjectMember';
 import { PaginationOptions, PaginationMeta } from '../interfaces/pagination.interface';
@@ -52,14 +51,14 @@ export class ProjectService {
             end_date: dto.end_date ? new Date(dto.end_date) : undefined,
         });
 
+        // Add creator as project member
         await this.projectMemberRepository.create({
             project_id: project.id,
             user_id: userId,
-            role: ProjectRole.OWNER,
             joined_at: new Date(),
         });
 
-        this.logger.info('Project created', { projectId: project.id, correlationId });
+        this.logger.info('Project created', { projectId: project.id, correlation_id: correlationId });
 
         return project;
     }
@@ -139,7 +138,7 @@ export class ProjectService {
 
         await this.projectRepository.update(projectId, updateData);
 
-        this.logger.info('Project updated', { projectId, correlationId });
+        this.logger.info('Project updated', { projectId, correlation_id: correlationId });
 
         const updated = await this.projectRepository.findById(projectId);
         if (!updated) {
@@ -170,7 +169,7 @@ export class ProjectService {
 
         await this.projectRepository.hardDelete(projectId);
 
-        this.logger.info('Project deleted', { projectId, correlationId });
+        this.logger.info('Project deleted', { projectId, correlation_id: correlationId });
     }
 
     async addMember(
@@ -196,11 +195,14 @@ export class ProjectService {
         const member = await this.projectMemberRepository.create({
             project_id: projectId,
             user_id: dto.user_id,
-            role: dto.role || ProjectRole.MEMBER,
             joined_at: new Date(),
         });
 
-        this.logger.info('Member added to project', { projectId, userId: dto.user_id, correlationId });
+        this.logger.info('Member added to project', {
+            projectId,
+            userId: dto.user_id,
+            correlation_id: correlationId
+        });
 
         return member;
     }
@@ -225,13 +227,14 @@ export class ProjectService {
             throw new ClientErrorException('Member not found in project', ResponseStatus.NOT_FOUND);
         }
 
-        if (member.role === ProjectRole.OWNER) {
-            throw new ClientErrorException('Cannot remove the project owner', ResponseStatus.BAD_REQUEST);
+        // Cannot remove project creator
+        if (project.created_by === userId) {
+            throw new ClientErrorException('Cannot remove the project creator', ResponseStatus.BAD_REQUEST);
         }
 
         await this.projectMemberRepository.hardDelete(member.id);
 
-        this.logger.info('Member removed from project', { projectId, userId, correlationId });
+        this.logger.info('Member removed from project', { projectId, userId, correlation_id: correlationId });
     }
 
     private generateSlug(name: string, companyId: number): string {

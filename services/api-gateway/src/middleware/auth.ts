@@ -1,5 +1,26 @@
 import { NextFunction, Request, Response } from 'express';
-import { getAuthenticatedUser } from '../proxy/iamProxy';
+import jwt from 'jsonwebtoken';
+import { config } from '../config';
+
+export interface JwtPayload {
+  id: number;
+  email: string;
+  name: string;
+  company_id: number;
+  company_name: string | null;
+  roles: string[];
+  iat: number;
+  exp: number;
+}
+
+export interface AuthenticatedUser {
+  id: number;
+  email: string;
+  name: string;
+  company_id: number;
+  company_name: string | null;
+  roles: string[];
+}
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.header('authorization');
@@ -8,14 +29,32 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   }
 
   const token = authHeader.slice(7).trim();
+  
   try {
-    const user = await getAuthenticatedUser(token, (req as any).correlationId);
-    (req as any).user = user;
+    const decoded = jwt.verify(token, config.jwtSecret) as JwtPayload;
+    
+    // Attach user payload to request
+    (req as any).user = {
+      id: decoded.id,
+      email: decoded.email,
+      name: decoded.name,
+      company_id: decoded.company_id,
+      company_name: decoded.company_name,
+      roles: decoded.roles || [],
+    } as AuthenticatedUser;
+    
+    // Also attach the token for downstream services that may need it
+    (req as any).token = token;
+    
     return next();
   } catch (error) {
-    const status = (error as any)?.status ?? 401;
-    const data = (error as any)?.data ?? { success: false, error: 'Unauthorized' };
-    return res.status(status).json(data);
+    if (error instanceof jwt.TokenExpiredError) {
+      return res.status(401).json({ success: false, error: 'Token expired' });
+    }
+    if (error instanceof jwt.JsonWebTokenError) {
+      return res.status(401).json({ success: false, error: 'Invalid token' });
+    }
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
 }
 

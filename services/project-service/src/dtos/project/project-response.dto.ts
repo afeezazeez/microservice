@@ -1,38 +1,13 @@
-import { ProjectStatus } from '../../enums/project-status.enum';
-import { ProjectRole } from '../../enums/project-role.enum';
-
-interface IProjectMember {
-    id: number;
-    user_id: number;
-    role: ProjectRole;
-    joined_at: string | null;
-}
-
-interface IProject {
-    id: number;
-    company_id: number;
-    name: string;
-    slug: string;
-    description: string | null;
-    status: ProjectStatus;
-    created_by: number;
-    start_date: string | null;
-    end_date: string | null;
-    members?: IProjectMember[];
-    created_at: string;
-    updated_at: string;
-}
+import { IProject, IProjectMember } from '../../interfaces/project.interface';
 
 export class ProjectMemberDto {
     id: number;
     user_id: number;
-    role: ProjectRole;
     joined_at: string | null;
 
     constructor(member: any) {
         this.id = member.id;
         this.user_id = member.user_id;
-        this.role = member.role;
         this.joined_at = member.joined_at ? new Date(member.joined_at).toISOString() : null;
     }
 
@@ -54,7 +29,7 @@ class ProjectResponseDto {
     name: string;
     slug: string;
     description: string | null;
-    status: ProjectStatus;
+    status: string;
     created_by: number;
     start_date: string | null;
     end_date: string | null;
@@ -81,7 +56,7 @@ class ProjectResponseDto {
     }
 
     static make(project: any): IProject {
-        return new ProjectResponseDto(project);
+        return new ProjectResponseDto(project) as IProject;
     }
 
     static collection(projects: any[]): IProject[] {

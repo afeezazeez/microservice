@@ -18,16 +18,31 @@ class JWTService
     public function __construct(UserRepository $userRepository)
     {
         $this->secret = config('jwt.secret');
-        $this->ttl = config('jwt.ttl');
+        $this->ttl = (int) config('jwt.ttl');
         $this->userRepository = $userRepository;
     }
 
     public function generateToken(User $user): string
     {
+        // Load company relation if not already loaded
+        if (!$user->relationLoaded('company')) {
+            $user->load('company');
+        }
+
+        // Get user's role slugs for this company
+        $roles = $user->roles()
+            ->where('user_roles.company_id', $user->company_id)
+            ->whereNull('user_roles.resource_type')
+            ->pluck('slug')
+            ->toArray();
+
         $payload = [
             'id' => $user->id,
             'email' => $user->email,
+            'name' => $user->name,
             'company_id' => $user->company_id,
+            'company_name' => $user->company?->name,
+            'roles' => $roles,
             'iat' => now()->timestamp,
             'exp' => now()->addMinutes($this->ttl)->timestamp,
         ];

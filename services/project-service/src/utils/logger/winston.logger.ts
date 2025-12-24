@@ -1,84 +1,81 @@
 import {
     transports,
-    Logger,
+    Logger as WinstonLoggerType,
     createLogger,
-    LoggerOptions,
     format,
 } from 'winston';
-const { combine, timestamp, label, prettyPrint } = format;
 import configService from '../config/config.service';
 import { ILogger } from '../../interfaces/logger.interface';
 import DailyRotateFile from 'winston-daily-rotate-file';
 
+// Custom JSON format to match IAM's log structure for Grafana/Loki
+const jsonFormat = format.combine(
+    format.timestamp(),
+    format.printf(({ level, message, timestamp, ...meta }) => {
+        return JSON.stringify({
+            level,
+            message,
+            context: {
+                timestamp,
+                ...meta
+            }
+        });
+    })
+);
+
 export class WinstonLogger implements ILogger {
-    private readonly logConfig?: LoggerOptions;
-    public logger: Logger | null = null;
-    private readonly logChannel: string;
-    private readonly logSource: string;
+    public logger: WinstonLoggerType;
+    private readonly scope: string;
 
     constructor(scope: string) {
-        this.logChannel = configService.get('LOG_CHANNEL') || 'daily';
-        this.logSource = configService.get('LOG_SOURCE') || 'file';
+        this.scope = scope;
+        const transportsList: any[] = [];
 
-        if (this.logSource === 'file') {
-            const filePath = configService.get('LOG_FILE_PATH') || 'logs/app.log';
-            const transportsList = [];
+        const logChannel = configService.get('LOG_CHANNEL') || 'daily';
+        const filePath = configService.get('LOG_FILE_PATH') || 'logs/app.log';
 
-            if (this.logChannel === 'daily') {
-                transportsList.push(
-                    new DailyRotateFile({
-                        filename: `${filePath}-%DATE%.log`,
-                        datePattern: 'YYYY-MM-DD',
-                        maxFiles: '14d',
-                    })
-                );
-            } else {
-                transportsList.push(new transports.File({ filename: filePath }));
-            }
-
-            // Also log to console in development
-            if (configService.get('NODE_ENV') !== 'production') {
-                transportsList.push(new transports.Console({
-                    format: format.combine(
-                        format.colorize(),
-                        format.simple()
-                    )
-                }));
-            }
-
-            this.logConfig = {
-                transports: transportsList,
-                format: combine(label({ label: scope }), timestamp(), prettyPrint()),
-            };
-
-            this.logger = createLogger(this.logConfig);
+        if (logChannel === 'daily') {
+            transportsList.push(
+                new DailyRotateFile({
+                    filename: `${filePath}-%DATE%.log`,
+                    datePattern: 'YYYY-MM-DD',
+                    maxFiles: '14d',
+                })
+            );
+        } else {
+            transportsList.push(new transports.File({ filename: filePath }));
         }
-    }
 
-    log(level: 'info' | 'error' | 'debug' | 'warn', message: string, meta?: object): void {
-        if (this.logSource === 'file' && this.logger) {
-            this.logger[level](message, meta);
-        }
-    }
+        // Log to stderr with JSON format for Docker/Loki to pick up
+        transportsList.push(new transports.Console({
+            stderrLevels: ['error', 'warn', 'info', 'debug'],
+            format: jsonFormat
+        }));
 
-    debug(message: string, meta?: object): void {
-        this.log('debug', message, meta);
-    }
-
-    error(message: string, meta?: object): void {
-        this.log('error', message, meta);
+        this.logger = createLogger({
+            transports: transportsList,
+            format: jsonFormat,
+            defaultMeta: { scope: this.scope }
+        });
     }
 
     info(message: string, meta?: object): void {
-        this.log('info', message, meta);
+        this.logger.info(message, meta);
+    }
+
+    error(message: string, meta?: object): void {
+        this.logger.error(message, meta);
     }
 
     warn(message: string, meta?: object): void {
-        this.log('warn', message, meta);
+        this.logger.warn(message, meta);
+    }
+
+    debug(message: string, meta?: object): void {
+        this.logger.debug(message, meta);
     }
 }
 
 // Export a default logger instance
 const Logger = new WinstonLogger('App');
 export default Logger;
-
