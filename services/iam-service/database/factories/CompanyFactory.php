@@ -30,3 +30,4 @@ class CompanyFactory extends Factory
     }
 }
 
+

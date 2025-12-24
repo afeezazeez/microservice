@@ -23,7 +23,7 @@ build: ## Build all images
 
 up: ## Start all Docker containers (infra + services)
 	@echo "$(BLUE)📦 Starting Docker containers...$(NC)"
-	@docker-compose up -d --build traefik mysql redis rabbitmq minio loki promtail grafana iam-service iam-nginx api-gateway frontend || echo "$(YELLOW)⚠️  Some services may not be available yet$(NC)"
+	@docker-compose up -d --build traefik mysql redis rabbitmq minio loki promtail grafana iam-service iam-nginx api-gateway frontend project-service || echo "$(YELLOW)⚠️  Some services may not be available yet$(NC)"
 	@echo "$(BLUE)⏳ Waiting for services to be healthy...$(NC)"
 	@sleep 10
 
@@ -89,9 +89,17 @@ iam-test: ## Run IAM service tests (composer test) with test override
 
 
 
-# Placeholder setups for services not yet implemented
-project-setup:
-	@echo "$(YELLOW)⚠️  Project service setup is not implemented yet (skipping).$(NC)"
+project-setup: project-up project-migrate ## Setup Project service (start, migrate)
+
+project-up: ## Start Project service
+	@echo "$(BLUE)🚀 Starting Project service...$(NC)"
+	@docker-compose up -d --build project-service || echo "$(YELLOW)⚠️  Project service may not be available yet$(NC)"
+	@echo "$(BLUE)⏳ Waiting for Project service to be healthy...$(NC)"
+	@sleep 5
+
+project-migrate: ## Run Project service migrations
+	@echo "$(BLUE)🗄️  Running Project Service migrations...$(NC)"
+	@docker-compose exec -T project-service npx sequelize-cli db:migrate || echo "$(YELLOW)⚠️  Migrations may need manual run$(NC)"
 
 task-setup:
 	@echo "$(YELLOW)⚠️  Task service setup is not implemented yet (skipping).$(NC)"

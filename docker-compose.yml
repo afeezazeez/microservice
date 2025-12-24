@@ -183,24 +183,25 @@ services:
     networks:
       - microservices-network
 
-  # project-service:
-  #   build:
-  #     context: ./services/project-service
-  #     dockerfile: Dockerfile
-  #   container_name: task-project-service
-  #   ports:
-  #     - "3001:3001"
-  #   env_file:
-  #     - ./services/project-service/.env
-  #   volumes:
-  #     - ./services/project-service:/app
-  #   depends_on:
-  #     mysql:
-  #       condition: service_healthy
-  #     rabbitmq:
-  #       condition: service_healthy
-  #   networks:
-  #     - microservices-network
+  project-service:
+    build:
+      context: ./services/project-service
+      dockerfile: Dockerfile
+    container_name: task-project-service
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./services/project-service/.env
+    volumes:
+      - ./services/project-service:/app
+      - /app/node_modules
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - microservices-network
 
   # task-service:
   #   build:
