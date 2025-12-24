@@ -86,12 +86,10 @@ class AuthServiceTest extends TestCase
         $roleService = Mockery::mock(RoleService::class);
         $jwtService = Mockery::mock(JWTService::class);
 
-        // Create a company
         $company = new Company();
         $company->id = 1;
         $company->name = 'Test Company';
 
-        // Create a partial mock of User to handle relations
         $user = Mockery::mock(User::class)->makePartial()->shouldAllowMockingProtectedMethods();
         $user->id = 1;
         $user->email = 'test@example.com';
@@ -100,22 +98,18 @@ class AuthServiceTest extends TestCase
         $user->name = 'Test User';
         $token = 'mock-jwt-token';
 
-        // Mock the load method for company relation (may or may not be called depending on relationLoaded)
         $user->shouldReceive('load')
             ->with('company')
             ->andReturnSelf();
 
-        // Mock relationLoaded to return false (so load is called)
         $user->shouldReceive('relationLoaded')
             ->with('company')
             ->andReturn(false);
 
-        // Mock the company relation accessor
         $user->shouldReceive('getAttribute')
             ->with('company')
             ->andReturn($company);
 
-        // Mock the roles() relationship and query
         $rolesQuery = Mockery::mock();
         $rolesQuery->shouldReceive('where')
             ->with('user_roles.company_id', 1)
@@ -301,7 +295,6 @@ class AuthServiceTest extends TestCase
 
         $authService->logout($token);
 
-        // No exception means success
         $this->assertTrue(true);
     }
 

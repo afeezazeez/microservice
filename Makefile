@@ -103,17 +103,17 @@ project-migrate: ## Run Project service migrations
 	@echo "$(BLUE)🗄️  Running Project Service migrations...$(NC)"
 	@docker-compose exec -T project-service npx sequelize-cli db:migrate || echo "$(YELLOW)⚠️  Migrations may need manual run$(NC)"
 
-project-test: ## Run Project service tests (locally)
+project-test: ## Run Project service tests
 	@echo "$(BLUE)🧪 Running Project service tests...$(NC)"
-	@cd services/project-service && npm run test || echo "$(YELLOW)⚠️  Tests failed$(NC)"
+	@docker-compose exec -T project-service npm run test || echo "$(YELLOW)⚠️  Tests failed$(NC)"
 
 project-swagger: ## Generate Swagger docs for Project service
 	@echo "$(BLUE)📚 Generating Project service Swagger documentation...$(NC)"
 	@docker-compose exec -T project-service npm run swagger || echo "$(YELLOW)⚠️  Swagger generation may need manual run$(NC)"
 
-api-gateway-test: ## Run API Gateway tests (locally)
+api-gateway-test: ## Run API Gateway tests
 	@echo "$(BLUE)🧪 Running API Gateway tests...$(NC)"
-	@cd services/api-gateway && npm run test || echo "$(YELLOW)⚠️  Tests failed$(NC)"
+	@docker-compose exec -T api-gateway npm run test || echo "$(YELLOW)⚠️  Tests failed$(NC)"
 
 task-setup:
 	@echo "$(YELLOW)⚠️  Task service setup is not implemented yet (skipping).$(NC)"
@@ -153,7 +153,7 @@ status: ## Display all service URLs and documentation links
 	fi
 	@if docker-compose ps | grep -q "project-service.*Up"; then \
 		echo "$(YELLOW)✓ Project Service (Node.js)$(NC)"; \
-		echo "    🌐 API:  https://project-service.afeez-dev.local"; \
+		echo "    🌐 API:  https://project-service.afeez-dev.local/api"; \
 		echo "    📚 Docs: https://project-service.afeez-dev.local/api/docs"; \
 		echo ""; \
 	fi

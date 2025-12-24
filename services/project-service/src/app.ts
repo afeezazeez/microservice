@@ -1,6 +1,8 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger.config';
 import indexRouter from './routes/index';
 import { errorHandler } from './middlewares/error.handler';
 import { correlationIdMiddleware } from './middlewares/correlation-id.middleware';
@@ -19,11 +21,18 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id'],
 }));
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,
+}));
 app.use(correlationIdMiddleware);
 app.use(httpLogger);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Project Service API Documentation',
+}));
 
 app.use('/api', indexRouter);
 
