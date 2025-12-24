@@ -1,6 +1,8 @@
 .PHONY: help setup build up down restart logs clean \
 	iam-setup iam-up iam-migrate iam-seed iam-swagger iam-test \
-	project-setup task-setup notification-setup file-setup analytics-setup api-gateway-setup frontend-setup \
+	project-setup project-test project-swagger \
+	api-gateway-test \
+	task-setup notification-setup file-setup analytics-setup api-gateway-setup frontend-setup \
 	status
 
 # Colors
@@ -100,6 +102,18 @@ project-up: ## Start Project service
 project-migrate: ## Run Project service migrations
 	@echo "$(BLUE)🗄️  Running Project Service migrations...$(NC)"
 	@docker-compose exec -T project-service npx sequelize-cli db:migrate || echo "$(YELLOW)⚠️  Migrations may need manual run$(NC)"
+
+project-test: ## Run Project service tests (locally)
+	@echo "$(BLUE)🧪 Running Project service tests...$(NC)"
+	@cd services/project-service && npm run test || echo "$(YELLOW)⚠️  Tests failed$(NC)"
+
+project-swagger: ## Generate Swagger docs for Project service
+	@echo "$(BLUE)📚 Generating Project service Swagger documentation...$(NC)"
+	@docker-compose exec -T project-service npm run swagger || echo "$(YELLOW)⚠️  Swagger generation may need manual run$(NC)"
+
+api-gateway-test: ## Run API Gateway tests (locally)
+	@echo "$(BLUE)🧪 Running API Gateway tests...$(NC)"
+	@cd services/api-gateway && npm run test || echo "$(YELLOW)⚠️  Tests failed$(NC)"
 
 task-setup:
 	@echo "$(YELLOW)⚠️  Task service setup is not implemented yet (skipping).$(NC)"

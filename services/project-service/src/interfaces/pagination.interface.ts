@@ -1,7 +1,7 @@
 export interface PaginationOptions {
-    page?: number;
+  page?: number;
     order?: 'ASC' | 'DESC';
-    limit?: number;
+  limit?: number;
 }
 
 export interface PaginationMeta {

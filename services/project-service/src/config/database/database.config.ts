@@ -8,28 +8,28 @@ const Logger = new WinstonLogger('Database');
 const { host, port, name, user, password } = configService.database;
 
 const sequelize = new Sequelize({
-    dialect: 'mysql',
-    host,
-    port,
-    database: name,
-    username: user,
-    password,
+  dialect: 'mysql',
+  host,
+  port,
+  database: name,
+  username: user,
+  password,
     logging: configService.isDevelopment ? (msg) => Logger.debug(msg) : false,
-    models: [Project, ProjectMember],
-    define: {
-        underscored: true,
-        timestamps: true,
-    },
+  models: [Project, ProjectMember],
+  define: {
+    underscored: true,
+    timestamps: true,
+  },
 });
 
 export async function initializeDatabase(): Promise<void> {
-    try {
-        await sequelize.authenticate();
+  try {
+    await sequelize.authenticate();
         Logger.info('Database connection established successfully');
     } catch (error: any) {
         Logger.error('Unable to connect to database', { error: error.message });
-        throw error;
-    }
+    throw error;
+  }
 }
 
 export default sequelize;

@@ -6,21 +6,21 @@ export class UpdateProjectDto {
     @IsOptional()
     @MinLength(2, { message: 'Project name must be at least 2 characters' })
     @MaxLength(255, { message: 'Project name must not exceed 255 characters' })
-    name?: string;
+  name?: string;
 
     @IsString()
     @IsOptional()
-    description?: string;
+  description?: string;
 
     @IsEnum(ProjectStatus, { message: 'Invalid project status' })
     @IsOptional()
-    status?: ProjectStatus;
+  status?: ProjectStatus;
 
     @IsString()
     @IsOptional()
-    start_date?: string;
+  start_date?: string;
 
     @IsString()
     @IsOptional()
-    end_date?: string;
+  end_date?: string;
 }

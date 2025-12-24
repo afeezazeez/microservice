@@ -32,21 +32,21 @@ export class ErrorResponseDto<T = any> {
 }
 
 export function sendSuccessResponse<T>(
-    res: Response,
+  res: Response,
     data?: T,
     message: string | null = null,
-    statusCode: number = ResponseStatus.OK
+  statusCode: number = ResponseStatus.OK
 ): void {
     const response = new SuccessResponseDto(message, data);
-    res.status(statusCode).json(response);
+  res.status(statusCode).json(response);
 }
 
 export function sendErrorResponse<T>(
-    res: Response,
+  res: Response,
     error?: T,
     message: string | null = null,
-    statusCode: number = ResponseStatus.INTERNAL_SERVER
+  statusCode: number = ResponseStatus.INTERNAL_SERVER
 ): void {
     const response = new ErrorResponseDto(message, error);
-    res.status(statusCode).json(response);
+  res.status(statusCode).json(response);
 }

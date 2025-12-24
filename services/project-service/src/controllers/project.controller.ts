@@ -11,35 +11,35 @@ import { extractPaginationAndSorting } from '../utils/helper';
 import { FindOptions, Op } from 'sequelize';
 
 export class ProjectController {
-    private readonly projectService: ProjectService;
+  private readonly projectService: ProjectService;
 
-    constructor() {
-        this.projectService = new ProjectService();
-    }
+  constructor() {
+    this.projectService = new ProjectService();
+  }
 
-    createProject = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-        try {
-            const dto: CreateProjectDto = req.body;
-            const user = req.user!;
+  createProject = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const dto: CreateProjectDto = req.body;
+      const user = req.user!;
 
-            const project = await this.projectService.createProject(
-                dto,
-                user.id,
-                user.company_id,
-                req.correlationId
-            );
+      const project = await this.projectService.createProject(
+        dto,
+        user.id,
+        user.company_id,
+        req.correlationId
+      );
 
             return sendSuccessResponse(res, {
                 data: ProjectResponseDto.make(project)
             }, 'Project created successfully', ResponseStatus.CREATED);
-        } catch (error) {
-            next(error);
-        }
-    };
+    } catch (error) {
+      next(error);
+    }
+  };
 
-    getProjects = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-        try {
-            const user = req.user!;
+  getProjects = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!;
             const search = req.query.q as string;
             const sortDirection = req.query.sortDirection || 'desc';
             const sortBy = req.query.sortBy || 'created_at';
@@ -72,92 +72,92 @@ export class ProjectController {
                 data: ProjectResponseDto.collection(result.data),
                 meta: result.meta
             }, 'Projects retrieved successfully');
-        } catch (error) {
-            next(error);
-        }
-    };
+    } catch (error) {
+      next(error);
+    }
+  };
 
-    getProject = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-        try {
-            const projectId = parseInt(req.params.id);
-            const user = req.user!;
+  getProject = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const user = req.user!;
 
             const project = await this.projectService.fetchProject(projectId, user.company_id);
 
             return sendSuccessResponse(res, {
                 data: ProjectResponseDto.make(project)
             }, 'Project retrieved successfully');
-        } catch (error) {
-            next(error);
-        }
-    };
+    } catch (error) {
+      next(error);
+    }
+  };
 
-    updateProject = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-        try {
-            const projectId = parseInt(req.params.id);
-            const dto: UpdateProjectDto = req.body;
-            const user = req.user!;
+  updateProject = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const dto: UpdateProjectDto = req.body;
+      const user = req.user!;
 
-            const project = await this.projectService.updateProject(
-                projectId,
-                dto,
-                user.company_id,
-                req.correlationId
-            );
+      const project = await this.projectService.updateProject(
+        projectId,
+        dto,
+        user.company_id,
+        req.correlationId
+      );
 
             return sendSuccessResponse(res, {
                 data: ProjectResponseDto.make(project)
             }, 'Project updated successfully');
-        } catch (error) {
-            next(error);
-        }
-    };
+    } catch (error) {
+      next(error);
+    }
+  };
 
-    deleteProject = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-        try {
-            const projectId = parseInt(req.params.id);
-            const user = req.user!;
+  deleteProject = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const user = req.user!;
 
-            await this.projectService.deleteProject(projectId, user.company_id, req.correlationId);
+      await this.projectService.deleteProject(projectId, user.company_id, req.correlationId);
 
             return sendSuccessResponse(res, null, 'Project deleted successfully', ResponseStatus.OK);
-        } catch (error) {
-            next(error);
-        }
-    };
+    } catch (error) {
+      next(error);
+    }
+  };
 
-    addMember = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-        try {
-            const projectId = parseInt(req.params.id);
-            const dto: AddMemberDto = req.body;
-            const user = req.user!;
+  addMember = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const dto: AddMemberDto = req.body;
+      const user = req.user!;
 
-            const member = await this.projectService.addMember(
-                projectId,
-                dto,
-                user.company_id,
-                req.correlationId
-            );
+      const member = await this.projectService.addMember(
+        projectId,
+        dto,
+        user.company_id,
+        req.correlationId
+      );
 
             return sendSuccessResponse(res, {
                 data: ProjectMemberDto.make(member)
             }, 'Member added successfully', ResponseStatus.CREATED);
-        } catch (error) {
-            next(error);
-        }
-    };
+    } catch (error) {
+      next(error);
+    }
+  };
 
-    removeMember = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-        try {
-            const projectId = parseInt(req.params.id);
-            const userId = parseInt(req.params.userId);
-            const user = req.user!;
+  removeMember = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const userId = parseInt(req.params.userId);
+      const user = req.user!;
 
-            await this.projectService.removeMember(projectId, userId, user.company_id, req.correlationId);
+      await this.projectService.removeMember(projectId, userId, user.company_id, req.correlationId);
 
             return sendSuccessResponse(res, null, 'Member removed successfully');
-        } catch (error) {
-            next(error);
-        }
-    };
+    } catch (error) {
+      next(error);
+    }
+  };
 }

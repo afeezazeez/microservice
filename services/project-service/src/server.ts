@@ -8,16 +8,16 @@ const Logger = new WinstonLogger('Server');
 const PORT = configService.port;
 
 async function bootstrap() {
-    try {
-        await initializeDatabase();
+  try {
+    await initializeDatabase();
 
-        app.listen(PORT, () => {
+    app.listen(PORT, () => {
             Logger.info(`Project Service running on port ${PORT}`);
-        });
+    });
     } catch (error: any) {
         Logger.error('Failed to start Project Service', { error: error.message });
-        process.exit(1);
-    }
+    process.exit(1);
+  }
 }
 
 bootstrap();

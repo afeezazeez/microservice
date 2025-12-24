@@ -9,20 +9,20 @@ import { WinstonLogger } from '../utils/logger/winston.logger';
 const Logger = new WinstonLogger('ErrorHandler');
 
 export function errorHandler(err: Error, req: Request, res: Response, _next: NextFunction): void {
-    if (err instanceof ClientErrorException) {
+  if (err instanceof ClientErrorException) {
         sendErrorResponse(res, null, err.message, err.statusCode);
-        return;
-    }
+    return;
+  }
 
-    if (err instanceof ValidationException) {
+  if (err instanceof ValidationException) {
         sendErrorResponse(res, err.errors, err.message, err.statusCode);
-        return;
-    }
+    return;
+  }
 
-    if (err instanceof AuthenticationException) {
+  if (err instanceof AuthenticationException) {
         sendErrorResponse(res, null, err.message, err.statusCode);
-        return;
-    }
+    return;
+  }
 
     Logger.error('Unhandled error', { error: err.message, stack: err.stack, path: req.path, method: req.method });
     sendErrorResponse(res, null, 'An error occurred. Please try again later', ResponseStatus.INTERNAL_SERVER);

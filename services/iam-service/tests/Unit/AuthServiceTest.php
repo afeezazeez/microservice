@@ -86,12 +86,49 @@ class AuthServiceTest extends TestCase
         $roleService = Mockery::mock(RoleService::class);
         $jwtService = Mockery::mock(JWTService::class);
 
-        $user = new User();
+        // Create a company
+        $company = new Company();
+        $company->id = 1;
+        $company->name = 'Test Company';
+
+        // Create a partial mock of User to handle relations
+        $user = Mockery::mock(User::class)->makePartial()->shouldAllowMockingProtectedMethods();
         $user->id = 1;
         $user->email = 'test@example.com';
         $user->password = Hash::make('password123');
         $user->company_id = 1;
+        $user->name = 'Test User';
         $token = 'mock-jwt-token';
+
+        // Mock the load method for company relation (may or may not be called depending on relationLoaded)
+        $user->shouldReceive('load')
+            ->with('company')
+            ->andReturnSelf();
+
+        // Mock relationLoaded to return false (so load is called)
+        $user->shouldReceive('relationLoaded')
+            ->with('company')
+            ->andReturn(false);
+
+        // Mock the company relation accessor
+        $user->shouldReceive('getAttribute')
+            ->with('company')
+            ->andReturn($company);
+
+        // Mock the roles() relationship and query
+        $rolesQuery = Mockery::mock();
+        $rolesQuery->shouldReceive('where')
+            ->with('user_roles.company_id', 1)
+            ->andReturnSelf();
+        $rolesQuery->shouldReceive('whereNull')
+            ->with('user_roles.resource_type')
+            ->andReturnSelf();
+        $rolesQuery->shouldReceive('pluck')
+            ->with('slug')
+            ->andReturn(collect(['admin']));
+
+        $user->shouldReceive('roles')
+            ->andReturn($rolesQuery);
 
         $userRepo->shouldReceive('findBy')
             ->with('email', 'test@example.com')
@@ -113,6 +150,8 @@ class AuthServiceTest extends TestCase
         $this->assertEquals($token, $result['token']);
         $this->assertIsString($result['token']);
         $this->assertNotEmpty($result['token']);
+        $this->assertArrayHasKey('company_name', $result['user']);
+        $this->assertArrayHasKey('roles', $result['user']);
     }
 
     public function test_login_throws_exception_when_user_not_found(): void

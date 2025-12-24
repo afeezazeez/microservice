@@ -9,13 +9,13 @@ export class CreateProjectDto {
 
     @IsString()
     @IsOptional()
-    description?: string;
+  description?: string;
 
     @IsString()
     @IsOptional()
-    start_date?: string;
+  start_date?: string;
 
     @IsString()
     @IsOptional()
-    end_date?: string;
+  end_date?: string;
 }
