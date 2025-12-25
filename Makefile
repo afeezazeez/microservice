@@ -1,7 +1,6 @@
 .PHONY: help setup build up down restart logs clean \
 	iam-setup iam-up iam-migrate iam-seed iam-swagger iam-test \
-	project-setup project-test project-swagger \
-	api-gateway-test \
+	project-setup project-swagger \
 	task-setup notification-setup file-setup analytics-setup api-gateway-setup frontend-setup \
 	status
 
@@ -88,9 +87,6 @@ iam-test: ## Run IAM service tests (composer test) with test override
 		-e LOG_DEPRECATIONS_TRACE=false \
 		iam-service sh -c "rm -f bootstrap/cache/config.php && php artisan config:clear && composer test" || echo "$(YELLOW)⚠️  Tests failed$(NC)"
 
-
-
-
 project-setup: project-up project-migrate ## Setup Project service (start, migrate)
 
 project-up: ## Start Project service
@@ -103,17 +99,9 @@ project-migrate: ## Run Project service migrations
 	@echo "$(BLUE)🗄️  Running Project Service migrations...$(NC)"
 	@docker-compose exec -T project-service npx sequelize-cli db:migrate || echo "$(YELLOW)⚠️  Migrations may need manual run$(NC)"
 
-project-test: ## Run Project service tests
-	@echo "$(BLUE)🧪 Running Project service tests...$(NC)"
-	@docker-compose exec -T project-service npm run test || echo "$(YELLOW)⚠️  Tests failed$(NC)"
-
 project-swagger: ## Generate Swagger docs for Project service
 	@echo "$(BLUE)📚 Generating Project service Swagger documentation...$(NC)"
 	@docker-compose exec -T project-service npm run swagger || echo "$(YELLOW)⚠️  Swagger generation may need manual run$(NC)"
-
-api-gateway-test: ## Run API Gateway tests
-	@echo "$(BLUE)🧪 Running API Gateway tests...$(NC)"
-	@docker-compose run --rm --no-deps api-gateway npm run test || echo "$(YELLOW)⚠️  Tests failed$(NC)"
 
 task-setup:
 	@echo "$(YELLOW)⚠️  Task service setup is not implemented yet (skipping).$(NC)"
@@ -147,7 +135,7 @@ status: ## Display all service URLs and documentation links
 	@echo ""
 	@if docker-compose ps | grep -q "iam-service.*Up"; then \
 		echo "$(YELLOW)✓ IAM Service (Laravel)$(NC)"; \
-		echo "    🌐 API:  https://iam-service.afeez-dev.local/api (via Traefik)"; \
+		echo "    🌐 API:  https://iam-service.afeez-dev.local/api"; \
 		echo "    📚 Docs: https://iam-service.afeez-dev.local/api/docs"; \
 		echo ""; \
 	fi
@@ -184,8 +172,12 @@ status: ## Display all service URLs and documentation links
 	@if docker-compose ps | grep -q "api-gateway.*Up"; then \
 		echo "$(YELLOW)✓ API Gateway (Node.js)$(NC)"; \
 		echo "    🌐 API:  https://api-gateway.afeez-dev.local"; \
-		echo "    📚 Docs: https://api-gateway.afeez-dev.local/api/docs"; \
-		echo "    ↪️  Proxies IAM: https://iam-service.afeez-dev.local"; \
+		echo "    ↪️  Proxies IAM Service: https://iam-service.afeez-dev.local"; \
+		echo "    ↪️  Proxies Project Service: https://project-service.afeez-dev.local"; \
+		echo "    ↪️  Proxies Task Service: https://task-service.afeez-dev.local"; \
+		echo "    ↪️  Proxies Notification Service: https://notification-service.afeez-dev.local"; \
+		echo "    ↪️  Proxies File Service: https://file-service.afeez-dev.local"; \
+		echo "    ↪️  Proxies Analytics Service: https://analytics-service.afeez-dev.local"; \
 		echo ""; \
 	fi
 	@if docker-compose ps | grep -q "frontend.*Up"; then \

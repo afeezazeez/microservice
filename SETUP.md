@@ -67,66 +67,6 @@ mkcert -key-file infra/traefik/certs/local-key.pem -cert-file infra/traefik/cert
 
 Each service has its own `.env` file. Copy the `.env.example` files and customize them.
 
-### Testing (`services/iam-service/.env.testing`)
-
-Create `services/iam-service/.env.testing` locally (do not commit) with:
-```env
-APP_ENV=testing
-APP_DEBUG=false
-APP_URL=http://localhost
-
-LOG_CHANNEL=null
-LOG_STACK=null
-LOG_LEVEL=emergency
-LOG_DEPRECATIONS_CHANNEL=null
-LOG_DEPRECATIONS_TRACE=false
-
-DB_CONNECTION=sqlite
-DB_DATABASE=:memory:
-
-CACHE_STORE=array
-QUEUE_CONNECTION=sync
-SESSION_DRIVER=array
-MAIL_MAILER=array
-```
-
-Run tests (uses composer/PhpUnit in-container, in-memory DB, silent logs):
-```bash
-make iam-test
-```
-
-### Testing API Gateway (`services/api-gateway`)
-
-The API Gateway uses **Vitest** for testing. Tests mock upstream services (IAM, etc.) so they run fast without dependencies.
-
-**What's tested:**
-- Route proxying (login, register, refresh, me, logout)
-- Auth middleware (token validation via mocked IAM)
-- Correlation ID propagation
-- Error handling
-
-**Run tests locally:**
-```bash
-cd services/api-gateway
-npm test
-```
-
-**How mocking works:**
-
-Tests use `vi.mock()` to replace real HTTP calls with mocks:
-```typescript
-vi.mock('../proxy/iamProxy');
-const mockedIam = vi.mocked(iamProxy);
-
-mockedIam.login = vi.fn().mockResolvedValue({
-  status: 200,
-  data: { success: true, token: 'abc' },
-});
-```
-
-This means tests verify the gateway's routing/middleware logic **without** hitting real services.
-
-**Logs are silenced** during tests (log level set to `silent` when `NODE_ENV=test`).
 
 ### Quick Setup
 
@@ -276,7 +216,7 @@ RATE_LIMIT_WINDOW_MS=60000
 
 ## Important Notes
 
-1. **JWT_SECRET**: Must be the same in IAM Service and API Gateway
+1. **JWT_SECRET**: Must be the same in IAM Service, API Gateway, and all downstream services
 2. **Database Names**: Each service has its own database (database-per-service pattern)
 3. **Service URLs**: Use container names (e.g., `iam-service:8000`) not `localhost`
 4. **RabbitMQ**: All services use the same RabbitMQ instance but different queues
@@ -443,7 +383,7 @@ RATE_LIMIT_WINDOW_MS=60000
 
 ## Important Notes
 
-1. **JWT_SECRET**: Must be the same in IAM Service and API Gateway
+1. **JWT_SECRET**: Must be the same in IAM Service, API Gateway, and all downstream services
 2. **Database Names**: Each service has its own database (database-per-service pattern)
 3. **Service URLs**: Use container names (e.g., `iam-service:8000`) not `localhost`
 4. **RabbitMQ**: All services use the same RabbitMQ instance but different queues

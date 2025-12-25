@@ -225,31 +225,6 @@ make iam-swagger   # Generate IAM Swagger docs only
 make iam-test      # Run IAM service tests
 ```
 
-## Testing
-
-### IAM Service (Laravel/PHPUnit)
-
-Uses in-memory SQLite database and mocked dependencies:
-```bash
-make iam-test
-```
-
-### API Gateway (Node/Vitest)
-
-Uses mocked upstream services (no real HTTP calls):
-```bash
-cd services/api-gateway
-npm test
-```
-
-Tests verify:
-- Route proxying to IAM
-- Auth middleware behavior
-- Correlation ID propagation
-- Error handling
-
-Both test suites silence logs automatically.
-
 ### Manual Setup (without Make)
 
 1. Start all services

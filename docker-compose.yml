@@ -192,9 +192,6 @@ services:
       - "3001:3001"
     env_file:
       - ./services/project-service/.env
-    volumes:
-      - ./services/project-service:/app
-      - /app/node_modules
     depends_on:
       mysql:
         condition: service_healthy
@@ -281,26 +278,7 @@ services:
   #   networks:
   #     - microservices-network
 
-  # api-gateway:
-  #   build:
-  #     context: ./services/api-gateway
-  #     dockerfile: Dockerfile
-  #   container_name: task-api-gateway
-  #   ports:
-  #     - "3000:3000"
-  #   env_file:
-  #     - ./services/api-gateway/.env
-  #   volumes:
-  #     - ./services/api-gateway:/app
-  #   depends_on:
-  #     - iam-service
-  #     - project-service
-  #     - task-service
-  #     - notification-service
-  #     - file-service
-  #     - analytics-service
-  #   networks:
-  #     - microservices-network
+
 
 volumes:
   mysql_data:
