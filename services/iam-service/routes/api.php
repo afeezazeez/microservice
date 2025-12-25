@@ -15,6 +15,7 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::prefix('users')->middleware('jwt.auth')->group(function () {
+    Route::post('/', [UserController::class, 'store']);
     Route::get('/', [UserController::class, 'index']);
     Route::get('/{id}', [UserController::class, 'show']);
     Route::put('/{id}', [UserController::class, 'update']);

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\User\UpdateUserRequest;
+use App\Http\Requests\User\InviteUserRequest;
 use App\Services\UserService;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use OpenApi\Attributes as OA;
 
 class UserController extends Controller
@@ -14,6 +16,42 @@ class UserController extends Controller
     public function __construct(UserService $userService)
     {
         $this->userService = $userService;
+    }
+
+    #[OA\Post(
+        path: "/users",
+        summary: "Invite/create a new user",
+        tags: ["Users"],
+        security: [["bearerAuth" => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\MediaType(
+                mediaType: "application/json",
+                schema: new OA\Schema(
+                    properties: [
+                        new OA\Property(property: "name", type: "string", example: "Jane Doe"),
+                        new OA\Property(property: "email", type: "string", format: "email", example: "jane@acme.com"),
+                        new OA\Property(property: "role_slug", type: "string", nullable: true, example: "team-member"),
+                        new OA\Property(property: "resource_type", type: "string", nullable: true, example: "project"),
+                        new OA\Property(property: "resource_id", type: "integer", nullable: true, example: 123),
+                    ],
+                    required: ["name", "email"]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "User invited successfully"),
+            new OA\Response(response: 401, description: "Unauthorized"),
+            new OA\Response(response: 400, description: "Validation error"),
+        ]
+    )]
+    public function store(InviteUserRequest $request)
+    {
+        $companyId = $request->input('user_data')['company_id'] ?? null;
+
+        $user = $this->userService->inviteUser($companyId, $request->validated());
+
+        return successResponse('User invited successfully', $user, Response::HTTP_CREATED);
     }
 
     #[OA\Get(

@@ -130,7 +130,7 @@ user_id=3, role_id=5 (viewer), resource_type='project', resource_id=456
       INSERT INTO project_members (project_id, user_id, joined_at)
       VALUES (project_id, 123, NOW())
 
-4. Project Service → IAM Service (gRPC/HTTP):
+4. Project Service → IAM Service (HTTP):
    POST /api/roles/assign
    Body: {
      user_id: 123,
@@ -158,7 +158,7 @@ user_id=3, role_id=5 (viewer), resource_type='project', resource_id=456
    - Validates JWT (extracts user_id, company_id)
    - Forwards request to Project Service
 
-3. Project Service → IAM Service (gRPC/HTTP):
+3. Project Service → IAM Service (HTTP):
    POST /api/permissions/check
    Body: {
      user_id: user_id,
@@ -192,7 +192,7 @@ user_id=3, role_id=5 (viewer), resource_type='project', resource_id=456
    - Queries project_members table
    - Returns list of user_ids
 
-3. Project Service → IAM Service (gRPC/HTTP):
+3. Project Service → IAM Service (HTTP):
    GET /api/users/{user_id}/roles?resource_type=project&resource_id={project_id}
 
 4. IAM Service:

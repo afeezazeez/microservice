@@ -5,19 +5,23 @@ namespace App\Services;
 use App\Exceptions\ClientErrorException;
 use App\Repositories\UserRepository;
 use App\Repositories\CompanyRepository;
+use App\Services\RoleService;
 use Illuminate\Support\Facades\Hash;
 
 class UserService
 {
     private UserRepository $userRepository;
     private CompanyRepository $companyRepository;
+    private RoleService $roleService;
 
     public function __construct(
         UserRepository $userRepository,
-        CompanyRepository $companyRepository
+        CompanyRepository $companyRepository,
+        RoleService $roleService
     ) {
         $this->userRepository = $userRepository;
         $this->companyRepository = $companyRepository;
+        $this->roleService = $roleService;
     }
 
     public function listUsers(int $companyId, array $filters = []): array
@@ -116,6 +120,47 @@ class UserService
         }
 
         $this->userRepository->delete($userId);
+    }
+
+    public function inviteUser(int $companyId, array $data): array
+    {
+        if (!$companyId) {
+            throw new ClientErrorException('Company ID not found');
+        }
+
+        $company = $this->companyRepository->findById($companyId);
+        if (!$company) {
+            throw new ClientErrorException('Company not found');
+        }
+
+        $existingUser = $this->userRepository->findOne(['email' => $data['email']]);
+        if ($existingUser) {
+            throw new ClientErrorException('User with this email already exists');
+        }
+
+        $user = $this->userRepository->create([
+            'company_id' => $companyId,
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['email']),
+        ]);
+
+        if (isset($data['role_slug'])) {
+            $this->roleService->assignRole(
+                $user->id,
+                $data['role_slug'],
+                $companyId,
+                $data['resource_type'] ?? null,
+                $data['resource_id'] ?? null
+            );
+        }
+
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'company_id' => $user->company_id,
+        ];
     }
 }
 
