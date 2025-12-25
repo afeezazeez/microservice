@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth';
 import { login, refresh, register } from '../proxy/iamProxy';
+import { sendSuccessResponse, sendErrorResponse } from '../utils/response';
 
 const router = Router();
 
@@ -10,13 +11,18 @@ router.post('/login', async (req, res) => {
     res.status(iamResponse.status).json(iamResponse.data);
   } catch (error) {
     const status = (error as any)?.status ?? 500;
-    const data = (error as any)?.data ?? { success: false, error: 'Login failed' };
-    return res.status(status).json(data);
+    const errorData = (error as any)?.data;
+    
+    if (errorData && errorData.success === false) {
+      return res.status(status).json(errorData);
+    }
+    
+    sendErrorResponse(res, 'Login failed', null, [], [], status);
   }
 });
 
 router.get('/me', authMiddleware, (req, res) => {
-  return res.json({ success: true, data: { user: (req as any).user } });
+  sendSuccessResponse(res, { user: (req as any).user }, '');
 });
 
 router.post('/refresh', async (req, res) => {
@@ -25,8 +31,13 @@ router.post('/refresh', async (req, res) => {
     res.status(iamResponse.status).json(iamResponse.data);
   } catch (error) {
     const status = (error as any)?.status ?? 500;
-    const data = (error as any)?.data ?? { success: false, error: 'Token refresh failed' };
-    return res.status(status).json(data);
+    const errorData = (error as any)?.data;
+    
+    if (errorData && errorData.success === false) {
+      return res.status(status).json(errorData);
+    }
+    
+    sendErrorResponse(res, 'Token refresh failed', null, [], [], status);
   }
 });
 
@@ -36,8 +47,13 @@ router.post('/register', async (req, res) => {
     res.status(iamResponse.status).json(iamResponse.data);
   } catch (error) {
     const status = (error as any)?.status ?? 500;
-    const data = (error as any)?.data ?? { success: false, error: 'Registration failed' };
-    return res.status(status).json(data);
+    const errorData = (error as any)?.data;
+    
+    if (errorData && errorData.success === false) {
+      return res.status(status).json(errorData);
+    }
+    
+    sendErrorResponse(res, 'Registration failed', null, [], [], status);
   }
 });
 

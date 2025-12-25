@@ -29,9 +29,7 @@ export class ProjectController {
         req.correlationId
       );
 
-            return sendSuccessResponse(res, {
-                data: ProjectResponseDto.make(project)
-            }, 'Project created successfully', ResponseStatus.CREATED);
+            return sendSuccessResponse(res, ProjectResponseDto.make(project), 'Project created successfully', ResponseStatus.CREATED);
     } catch (error) {
       next(error);
     }
@@ -84,9 +82,7 @@ export class ProjectController {
 
             const project = await this.projectService.fetchProject(projectId, user.company_id);
 
-            return sendSuccessResponse(res, {
-                data: ProjectResponseDto.make(project)
-            }, 'Project retrieved successfully');
+            return sendSuccessResponse(res, ProjectResponseDto.make(project), 'Project retrieved successfully');
     } catch (error) {
       next(error);
     }
@@ -105,9 +101,7 @@ export class ProjectController {
         req.correlationId
       );
 
-            return sendSuccessResponse(res, {
-                data: ProjectResponseDto.make(project)
-            }, 'Project updated successfully');
+            return sendSuccessResponse(res, ProjectResponseDto.make(project), 'Project updated successfully');
     } catch (error) {
       next(error);
     }
@@ -120,7 +114,7 @@ export class ProjectController {
 
       await this.projectService.deleteProject(projectId, user.company_id, req.correlationId);
 
-            return sendSuccessResponse(res, null, 'Project deleted successfully', ResponseStatus.OK);
+            return sendSuccessResponse(res, [], 'Project deleted successfully', ResponseStatus.OK);
     } catch (error) {
       next(error);
     }
@@ -139,9 +133,7 @@ export class ProjectController {
         req.correlationId
       );
 
-            return sendSuccessResponse(res, {
-                data: ProjectMemberDto.make(member)
-            }, 'Member added successfully', ResponseStatus.CREATED);
+            return sendSuccessResponse(res, ProjectMemberDto.make(member), 'Member added successfully', ResponseStatus.CREATED);
     } catch (error) {
       next(error);
     }
@@ -155,7 +147,7 @@ export class ProjectController {
 
       await this.projectService.removeMember(projectId, userId, user.company_id, req.correlationId);
 
-            return sendSuccessResponse(res, null, 'Member removed successfully');
+            return sendSuccessResponse(res, [], 'Member removed successfully');
     } catch (error) {
       next(error);
     }

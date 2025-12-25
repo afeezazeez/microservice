@@ -1,52 +1,63 @@
 import { Response } from 'express';
 import { ResponseStatus } from '../../enums/http-status-codes';
 
-export class SuccessResponseDto<T = any> {
-    success: boolean;
-    message?: string;
-    data?: T;
-
-    constructor(message: string | null = null, data?: T) {
-        this.success = true;
-        if (message) {
-            this.message = message;
-        }
-        this.data = data;
-    }
+export interface SuccessResponse<T = any> {
+    success: true;
+    message: string;
+    data: T;
+    extra: any[];
 }
 
-export class ErrorResponseDto<T = any> {
-    success: boolean;
-    message?: string;
-    errors?: T;
-
-    constructor(message: string | null = null, errors?: T) {
-        this.success = false;
-        if (message) {
-            this.message = message;
-        }
-        if (errors) {
-            this.errors = errors;
-        }
-    }
+export interface ErrorResponse {
+    success: false;
+    data: any;
+    error: string | null;
+    error_message: string | null;
+    errors: any;
+    trace: any[];
 }
 
 export function sendSuccessResponse<T>(
   res: Response,
-    data?: T,
-    message: string | null = null,
+    data: T,
+    message: string = '',
   statusCode: number = ResponseStatus.OK
 ): void {
-    const response = new SuccessResponseDto(message, data);
+    const response: SuccessResponse<T> = {
+        success: true,
+        message: message,
+        data: data,
+        extra: []
+    };
   res.status(statusCode).json(response);
 }
 
-export function sendErrorResponse<T>(
+export function sendErrorResponse(
   res: Response,
-    error?: T,
-    message: string | null = null,
+    error: string | null = null,
+    errors: any = null,
+    data: any = [],
+    trace: any[] = [],
   statusCode: number = ResponseStatus.INTERNAL_SERVER
 ): void {
-    const response = new ErrorResponseDto(message, error);
+    let firstError: string | null = error;
+    
+    if (errors && typeof errors === 'object' && Object.keys(errors).length > 0) {
+        const firstValue = Object.values(errors)[0];
+        if (Array.isArray(firstValue) && firstValue.length > 0) {
+            firstError = String(firstValue[0]);
+        } else if (firstValue) {
+            firstError = String(firstValue);
+        }
+    }
+
+    const response: ErrorResponse = {
+        success: false,
+        data: data,
+        error: error,
+        error_message: firstError,
+        errors: errors || [],
+        trace: trace
+    };
   res.status(statusCode).json(response);
 }

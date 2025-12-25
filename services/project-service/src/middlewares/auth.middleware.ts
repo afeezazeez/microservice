@@ -48,11 +48,8 @@ export async function authMiddleware(
     const token = authHeader.substring(7);
     const correlationId = req.headers[CORRELATION_HEADER] as string;
 
-    // Decode and verify JWT token directly
-    // Note: API Gateway already validates tokens, so bad tokens shouldn't reach here
     const decoded = jwt.verify(token, configService.jwtSecret) as JwtPayload;
 
-    // Extract user data from JWT payload
     req.user = {
       id: decoded.id,
       email: decoded.email,

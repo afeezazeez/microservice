@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
+import { sendErrorResponse } from '../utils/response';
 
 export interface JwtPayload {
   id: number;
@@ -25,7 +26,7 @@ export interface AuthenticatedUser {
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.header('authorization');
   if (!authHeader || !authHeader.toLowerCase().startsWith('bearer ')) {
-    return res.status(401).json({ success: false, error: 'Unauthorized' });
+    return sendErrorResponse(res, 'Missing or invalid authorization header', null, [], [], 401);
   }
 
   const token = authHeader.slice(7).trim();
@@ -33,7 +34,6 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   try {
     const decoded = jwt.verify(token, config.jwtSecret) as JwtPayload;
     
-    // Attach user payload to request
     (req as any).user = {
       id: decoded.id,
       email: decoded.email,
@@ -43,18 +43,17 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
       roles: decoded.roles || [],
     } as AuthenticatedUser;
     
-    // Also attach the token for downstream services that may need it
     (req as any).token = token;
     
     return next();
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
-      return res.status(401).json({ success: false, error: 'Token expired' });
+      return sendErrorResponse(res, 'Token expired', null, [], [], 401);
     }
     if (error instanceof jwt.JsonWebTokenError) {
-      return res.status(401).json({ success: false, error: 'Invalid token' });
+      return sendErrorResponse(res, 'Invalid token', null, [], [], 401);
     }
-    return res.status(401).json({ success: false, error: 'Unauthorized' });
+    return sendErrorResponse(res, 'Unauthorized', null, [], [], 401);
   }
 }
 
