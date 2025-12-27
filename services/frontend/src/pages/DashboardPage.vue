@@ -1,63 +1,24 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
+import Layout from '@/components/Layout.vue'
 
 const authStore = useAuthStore()
-
-function handleLogout() {
-  authStore.logout()
-}
 </script>
 
 <template>
-  <div class="min-h-screen bg-[var(--color-bg)]">
-    <!-- Top Navigation -->
-    <nav class="border-b border-[var(--color-border)] bg-[var(--color-bg-elevated)]">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between h-16">
-          <!-- Logo -->
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <span class="text-lg font-semibold text-white">TaskFlow</span>
-          </div>
-
-          <!-- User menu -->
-          <div class="flex items-center gap-4">
-            <div class="text-right hidden sm:block">
-              <p class="text-sm font-medium text-white">{{ authStore.fullName }}</p>
-              <p class="text-xs text-zinc-400">{{ authStore.user?.email }}</p>
-            </div>
-            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold">
-              {{ authStore.user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() }}
-            </div>
-            <button
-              @click="handleLogout"
-              :disabled="authStore.loading"
-              class="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white border border-[var(--color-border)] hover:border-red-500/50 hover:bg-red-500/10 rounded-lg transition-all"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <Layout>
+    <div class="p-4 lg:p-6">
       <!-- Welcome Header -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-white">
+      <div class="mb-6 lg:mb-8">
+        <h2 class="text-2xl lg:text-3xl font-bold text-white">
           Welcome, {{ authStore.user?.name?.split(' ')[0] }}! 👋
-        </h1>
-        <p class="text-zinc-400 mt-1">Here's your account overview</p>
+        </h2>
+        <p class="text-zinc-400 mt-1 text-sm lg:text-base">Here's your account overview</p>
       </div>
 
       <!-- Stats Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl p-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
+        <div class="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl p-4 lg:p-6">
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
               <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -71,7 +32,7 @@ function handleLogout() {
           </div>
         </div>
 
-        <div class="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl p-6">
+        <div class="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl p-4 lg:p-6">
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 rounded-xl bg-indigo-500/20 flex items-center justify-center">
               <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,7 +46,7 @@ function handleLogout() {
           </div>
         </div>
 
-        <div class="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl p-6">
+        <div class="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl p-4 lg:p-6">
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
               <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -104,11 +65,11 @@ function handleLogout() {
 
       <!-- User Info Card -->
       <div class="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl overflow-hidden">
-        <div class="px-6 py-4 border-b border-[var(--color-border)]">
-          <h2 class="text-lg font-semibold text-white">Account Details</h2>
+        <div class="px-4 lg:px-6 py-4 border-b border-[var(--color-border)]">
+          <h3 class="text-base lg:text-lg font-semibold text-white">Account Details</h3>
         </div>
-        <div class="p-6">
-          <dl class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div class="p-4 lg:p-6">
+          <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
             <div>
               <dt class="text-sm font-medium text-zinc-400">User ID</dt>
               <dd class="mt-1 text-white font-mono text-sm bg-[var(--color-bg-elevated)] px-3 py-2 rounded-lg">
@@ -136,38 +97,6 @@ function handleLogout() {
           </dl>
         </div>
       </div>
-
-      <!-- Integration Info -->
-      <div class="mt-8 p-6 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-2xl">
-        <div class="flex items-start gap-4">
-          <div class="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
-            <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div class="flex-1">
-            <h3 class="text-white font-semibold">Full Stack Integration Test</h3>
-            <p class="text-zinc-400 text-sm mt-1">
-              This dashboard confirms the complete flow is working:
-            </p>
-            <ul class="text-zinc-400 text-sm mt-2 space-y-1">
-              <li class="flex items-center gap-2">
-                <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>
-                Frontend (Vue 3 + TypeScript + Tailwind)
-              </li>
-              <li class="flex items-center gap-2">
-                <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>
-                API Gateway (Node.js + Express) — proxies requests
-              </li>
-              <li class="flex items-center gap-2">
-                <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>
-                IAM Service (Laravel 12) — handles authentication
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
+    </div>
+  </Layout>
 </template>
-

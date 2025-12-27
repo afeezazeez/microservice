@@ -75,54 +75,54 @@ http:
     frontend:
       loadBalancer:
         servers:
-          - url: "http://task-frontend:80"
+          - url: "http://frontend:5173"
 
     iam:
       loadBalancer:
         servers:
-          - url: "http://task-iam-nginx:80"
+          - url: "http://iam-nginx:80"
 
     api-gateway:
       loadBalancer:
         servers:
-          - url: "http://task-api-gateway:3000"
+          - url: "http://api-gateway:3000"
 
     project:
       loadBalancer:
         servers:
-          - url: "http://task-project-service:3001"
+          - url: "http://project-service:3001"
 
     task:
       loadBalancer:
         servers:
-          - url: "http://task-task-service:3002"
+          - url: "http://task-service:3002"
 
     notification:
       loadBalancer:
         servers:
-          - url: "http://task-notification-service:3003"
+          - url: "http://notification-service:3003"
 
     file:
       loadBalancer:
         servers:
-          - url: "http://task-file-service:3004"
+          - url: "http://file-service:3004"
 
     analytics:
       loadBalancer:
         servers:
-          - url: "http://task-analytics-service:3005"
+          - url: "http://analytics-service:3005"
 
     minio:
       loadBalancer:
         servers:
-          - url: "http://task-minio:9001"
+          - url: "http://minio:9001"
 
     rabbitmq:
       loadBalancer:
         servers:
-          - url: "http://task-rabbitmq:15672"
+          - url: "http://rabbitmq:15672"
 
     grafana:
       loadBalancer:
         servers:
-          - url: "http://task-grafana:3000"
+          - url: "http://grafana:3000"

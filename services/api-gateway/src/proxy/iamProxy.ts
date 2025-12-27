@@ -49,3 +49,74 @@ export async function getAuthenticatedUser(token: string, correlationId?: string
   }
 }
 
+export async function listUsers(token: string, correlationId?: string): Promise<UpstreamResult> {
+  try {
+    const response = await iamClient.get('/api/users', {
+      headers: { Authorization: `Bearer ${token}` },
+      correlationId,
+    } as any);
+    return response;
+  } catch (error) {
+    throw mapUpstreamError(error, 'Failed to fetch users');
+  }
+}
+
+export async function getUser(token: string, id: number, correlationId?: string): Promise<UpstreamResult> {
+  try {
+    const response = await iamClient.get(`/api/users/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      correlationId,
+    } as any);
+    return response;
+  } catch (error) {
+    throw mapUpstreamError(error, 'Failed to fetch user');
+  }
+}
+
+export async function createUser(token: string, payload: any, correlationId?: string): Promise<UpstreamResult> {
+  try {
+    const response = await iamClient.post('/api/users', payload, {
+      headers: { Authorization: `Bearer ${token}` },
+      correlationId,
+    } as any);
+    return response;
+  } catch (error) {
+    throw mapUpstreamError(error, 'Failed to create user');
+  }
+}
+
+export async function updateUser(token: string, id: number, payload: any, correlationId?: string): Promise<UpstreamResult> {
+  try {
+    const response = await iamClient.put(`/api/users/${id}`, payload, {
+      headers: { Authorization: `Bearer ${token}` },
+      correlationId,
+    } as any);
+    return response;
+  } catch (error) {
+    throw mapUpstreamError(error, 'Failed to update user');
+  }
+}
+
+export async function deleteUser(token: string, id: number, correlationId?: string): Promise<UpstreamResult> {
+  try {
+    const response = await iamClient.delete(`/api/users/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      correlationId,
+    } as any);
+    return response;
+  } catch (error) {
+    throw mapUpstreamError(error, 'Failed to delete user');
+  }
+}
+
+export async function listRoles(token: string, correlationId?: string): Promise<UpstreamResult> {
+  try {
+    const response = await iamClient.get('/api/roles', {
+      headers: { Authorization: `Bearer ${token}` },
+      correlationId,
+    } as any);
+    return response;
+  } catch (error) {
+    throw mapUpstreamError(error, 'Failed to fetch roles');
+  }
+}

@@ -31,14 +31,21 @@ class UserService
         }
 
         $conditions = array_merge(['company_id' => $companyId], $filters);
-        $users = $this->userRepository->findAll($conditions);
+        $users = $this->userRepository->findAll($conditions, ['roles']);
 
-        return $users->map(function ($user) {
+        return $users->map(function ($user) use ($companyId) {
+            $roles = $user->roles()
+                ->where('user_roles.company_id', $companyId)
+                ->whereNull('user_roles.resource_type')
+                ->pluck('slug')
+                ->toArray();
+
             return [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'company_id' => $user->company_id,
+                'roles' => $roles,
             ];
         })->toArray();
     }

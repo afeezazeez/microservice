@@ -14,14 +14,30 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      host: '0.0.0.0',
       port: 5173,
+      ...(mode === 'development' && {
+        allowedHosts: env.VITE_ALLOWED_HOSTS 
+          ? env.VITE_ALLOWED_HOSTS.split(',').map(h => h.trim())
+          : [
+              'app.afeez-dev.local',
+              'localhost',
+              '.afeez-dev.local',
+            ],
+      }),
+      watch: {
+        usePolling: true,
+      },
+      hmr: {
+        host: 'localhost',
+        port: 5173,
+      },
       // For local dev outside Docker, proxy /api to API Gateway
       proxy: {
         '/api': {
-          target: env.VITE_API_GATEWAY_URL || 'https://api-gateway.afeez-dev.local',
+          target: env.VITE_API_GATEWAY_URL || 'http://api-gateway:3000',
           changeOrigin: true,
           secure: false,
-          rewrite: (path) => path.replace(/^\/api/, ''),
         },
       },
     },

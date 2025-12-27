@@ -112,7 +112,7 @@ In Grafana:
 
 1. Go to **Explore** → choose datasource **Loki**.
 2. Select a stream (left side), e.g. by label (it depends on your Docker labels), commonly:
-   - `{container_name="task-iam-service"}` or similar.
+   - `{container_name="iam-service"}` or similar.
 
 ### 3. Filter by correlation ID or message
 
@@ -135,19 +135,19 @@ This will show logs from **every service** that handled that request (IAM, API G
 **Query by correlation ID for a specific service:**
 
 ```logql
-{container_name="task-iam-service", correlation_id="demo-corr-123"}
+{container_name="iam-service", correlation_id="demo-corr-123"}
 ```
 
 **Filter by message content (text search):**
 
 ```logql
-{container_name="task-iam-service"} |= "auth_login_success"
+{container_name="iam-service"} |= "auth_login_success"
 ```
 
 **Filter by message type (using JSON field):**
 
 ```logql
-{container_name="task-iam-service"} | json | message="auth_login_success"
+{container_name="iam-service"} | json | message="auth_login_success"
 ```
 
 You should see JSON log entries with fields like:
