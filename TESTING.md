@@ -58,3 +58,4 @@ npm run test
 - All services use mocking to isolate units and avoid external dependencies
 - Tests automatically silence logs during execution
 
+

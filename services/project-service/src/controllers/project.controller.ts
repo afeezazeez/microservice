@@ -62,6 +62,7 @@ export class ProjectController {
             const paginationOptions = extractPaginationAndSorting(req);
             const result = await this.projectService.fetchCompanyProjects(
                 user.company_id,
+                user.id,
                 findOptions,
                 paginationOptions
             );
@@ -80,7 +81,7 @@ export class ProjectController {
       const projectId = parseInt(req.params.id);
       const user = req.user!;
 
-            const project = await this.projectService.fetchProject(projectId, user.company_id);
+            const project = await this.projectService.fetchProject(projectId, user.company_id, user.id);
 
             return sendSuccessResponse(res, ProjectResponseDto.make(project), 'Project retrieved successfully');
     } catch (error) {
@@ -98,6 +99,7 @@ export class ProjectController {
         projectId,
         dto,
         user.company_id,
+        user.id,
         req.correlationId
       );
 
@@ -112,7 +114,7 @@ export class ProjectController {
       const projectId = parseInt(req.params.id);
       const user = req.user!;
 
-      await this.projectService.deleteProject(projectId, user.company_id, req.correlationId);
+      await this.projectService.deleteProject(projectId, user.company_id, user.id, req.correlationId);
 
             return sendSuccessResponse(res, [], 'Project deleted successfully', ResponseStatus.OK);
     } catch (error) {
@@ -130,6 +132,7 @@ export class ProjectController {
         projectId,
         dto,
         user.company_id,
+        user.id,
         req.correlationId
       );
 
@@ -145,7 +148,7 @@ export class ProjectController {
       const userId = parseInt(req.params.userId);
       const user = req.user!;
 
-      await this.projectService.removeMember(projectId, userId, user.company_id, req.correlationId);
+      await this.projectService.removeMember(projectId, userId, user.company_id, user.id, req.correlationId);
 
             return sendSuccessResponse(res, [], 'Member removed successfully');
     } catch (error) {

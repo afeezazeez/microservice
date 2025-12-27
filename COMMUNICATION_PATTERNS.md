@@ -8,7 +8,10 @@ We use **three communication patterns**:
 
 1. **HTTP (Synchronous)** - Direct service calls
 2. **RabbitMQ (Asynchronous)** - Event-driven messaging
-3. **RPC (Synchronous HTTP)** - Service-to-service calls (NOT RabbitMQ)
+
+### Note on gRPC
+
+**gRPC** could be used for high-volume, low-latency service-to-service calls, but **we do not use it in this project**. We use HTTP/REST for all synchronous service-to-service communication.
 
 ---
 
@@ -95,42 +98,6 @@ rabbitmq.consume('announcements.fanout', '', (message) => {
 
 ---
 
-## 3. RPC (Synchronous HTTP)
-
-### ⚠️ IMPORTANT: RPC = HTTP Calls, NOT RabbitMQ
-
-### When to use:
-- Permission checks
-- Token validation
-- Data validation
-- Any operation that needs immediate response
-
-### Example:
-```typescript
-// API Gateway → IAM Service (HTTP RPC via reverse proxy)
-const hasPermission = await axios.post('https://iam-service.afeez-dev.local/api/rpc/check-permission', {
-  userId: 123,
-  permission: 'task:create',
-  resourceId: 456
-});
-
-// Response: { hasAccess: true/false }
-```
-
-### Flow:
-```
-API Gateway → HTTP Request → IAM Service
-           ← HTTP Response ←
-```
-
-### Why NOT RabbitMQ for RPC?
-- RabbitMQ is for **asynchronous** operations
-- RPC needs **immediate response**
-- HTTP is simpler and more direct for synchronous calls
-- Lower latency for permission checks
-
----
-
 ## Communication Examples
 
 ### Example 1: Creating a Task
@@ -186,6 +153,4 @@ API Gateway → HTTP Request → IAM Service
 | Pattern | Type | Use Case | Example |
 |---------|------|----------|---------|
 | **HTTP** | Synchronous | Direct calls, CRUD | Frontend → API Gateway → Service |
-| **RabbitMQ** | Asynchronous | Events, notifications | Task created → Notify users |
-| **RPC (HTTP)** | Synchronous | Permission checks, validation | API Gateway → IAM Service |
-
+| **RabbitMQ** | Asynchronous | Events, notifications | Task created → Notify users 

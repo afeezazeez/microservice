@@ -23,11 +23,15 @@ class PermissionService
         $this->permissionRepository = $permissionRepository;
     }
 
-    public function checkPermission(int $userId, string $permissionSlug, ?string $resourceType = null, ?int $resourceId = null): bool
+    public function checkPermission(int $userId, string $permissionSlug, int $companyId, ?string $resourceType = null, ?int $resourceId = null): bool
     {
         $user = $this->userRepository->findById($userId);
         
         if (!$user) {
+            return false;
+        }
+
+        if ($user->company_id !== $companyId) {
             return false;
         }
 
@@ -37,7 +41,7 @@ class PermissionService
             return false;
         }
 
-        $userRoles = $this->getRelevantUserRoles($userId, $user->company_id, $resourceType, $resourceId);
+        $userRoles = $this->getRelevantUserRoles($userId, $companyId, $resourceType, $resourceId);
 
         $hasPermission = false;
 
@@ -61,12 +65,12 @@ class PermissionService
         return $hasPermission;
     }
 
-    public function checkPermissions(int $userId, array $permissionSlugs, ?string $resourceType = null, ?int $resourceId = null): array
+    public function checkPermissions(int $userId, array $permissionSlugs, int $companyId, ?string $resourceType = null, ?int $resourceId = null): array
     {
         $results = [];
         
         foreach ($permissionSlugs as $permissionSlug) {
-            $results[$permissionSlug] = $this->checkPermission($userId, $permissionSlug, $resourceType, $resourceId);
+            $results[$permissionSlug] = $this->checkPermission($userId, $permissionSlug, $companyId, $resourceType, $resourceId);
         }
 
         return $results;

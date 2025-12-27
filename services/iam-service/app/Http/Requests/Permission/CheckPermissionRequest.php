@@ -16,6 +16,7 @@ class CheckPermissionRequest extends FormRequest
         return [
             'user_id' => ['nullable', 'integer'],
             'permission_slug' => ['required', 'string'],
+            'company_id' => ['required', 'integer'],
             'resource_type' => ['nullable', 'string', 'max:255'],
             'resource_id' => ['nullable', 'integer'],
         ];

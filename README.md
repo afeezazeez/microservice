@@ -5,7 +5,7 @@ A comprehensive microservices demonstration project showcasing:
 - API Gateway pattern
 - RabbitMQ messaging (Direct, Topic, Fanout exchanges)
 - IAM (Identity and Access Management)
-- HTTP calls, Async operations, RPC calls
+- HTTP calls, Async operations
 - Best practices at senior level
 
 ## Architecture Overview
@@ -88,7 +88,6 @@ A comprehensive microservices demonstration project showcasing:
 - System-wide announcements
 - Broadcast maintenance notifications
 
-### RPC Calls (HTTP-based)
 - API Gateway → IAM Service: Validate JWT, Check permissions (HTTP)
 - Services → IAM Service: Permission checks (HTTP)
 
@@ -291,10 +290,7 @@ All databases run on a single MySQL instance (can be split into separate instanc
 - File uploaded → Analytics Service
 - Project updated → Notification Service
 
-### RPC (Synchronous HTTP)
-- Permission checks: API Gateway → IAM Service (HTTP)
-- Token validation: API Gateway → IAM Service (HTTP)
-- Data validation: Service-to-service HTTP calls
+
 
 ## Environment Variables
 

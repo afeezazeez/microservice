@@ -24,9 +24,16 @@ class PermissionController extends Controller
             $userId = $request->input('user_data.id');
         }
 
+        $companyId = $request->validated()['company_id'] ?? $request->input('user_data.company_id');
+
+        if (!$companyId) {
+            return errorResponse('Company ID is required', [], 400);
+        }
+
         $allowed = $this->permissionService->checkPermission(
             (int) $userId,
             $request->validated()['permission_slug'],
+            (int) $companyId,
             $request->validated()['resource_type'] ?? null,
             $request->validated()['resource_id'] ?? null,
         );
@@ -42,9 +49,16 @@ class PermissionController extends Controller
             $userId = $request->input('user_data.id');
         }
 
+        $companyId = $request->validated()['company_id'] ?? $request->input('user_data.company_id');
+
+        if (!$companyId) {
+            return errorResponse('Company ID is required', [], 400);
+        }
+
         $results = $this->permissionService->checkPermissions(
             (int) $userId,
             $request->validated()['permission_slugs'],
+            (int) $companyId,
             $request->validated()['resource_type'] ?? null,
             $request->validated()['resource_id'] ?? null,
         );
