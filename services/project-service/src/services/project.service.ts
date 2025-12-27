@@ -12,7 +12,6 @@ import { PaginationOptions, PaginationMeta } from '../interfaces/pagination.inte
 import { generatePaginationMeta } from '../utils/helper';
 import { WinstonLogger } from '../utils/logger/winston.logger';
 import { FindOptions, Op } from 'sequelize';
-import { iamHttpClient } from './http/iam-client';
 
 export class ProjectService {
   private readonly projectRepository: ProjectRepository;
@@ -31,9 +30,6 @@ export class ProjectService {
     companyId: number,
     correlationId?: string
     ): Promise<Project> {
-    
-    await this.checkPermission(userId, 'project:create', companyId);
-
     const slug = this.generateSlug(dto.name, companyId);
 
         const existingProject = await this.projectRepository.findOne({
@@ -73,8 +69,6 @@ export class ProjectService {
         findOptions: FindOptions,
         paginationOptions: PaginationOptions
     ): Promise<{ data: Project[]; meta: PaginationMeta }> {
-    await this.checkPermission(userId, 'project:view', companyId);
-
         findOptions.where = {
             ...findOptions.where as object,
             company_id: companyId
@@ -93,9 +87,6 @@ export class ProjectService {
   }
 
     async fetchProject(projectId: number, companyId: number, userId: number): Promise<Project> {
-  
-      await this.checkPermission(userId, 'project:view', companyId, 'project', projectId);
-
         const project = await this.projectRepository.findById(projectId, {
             include: [{ model: ProjectMember, as: 'members' }]
         });
@@ -118,9 +109,6 @@ export class ProjectService {
     userId: number,
     correlationId?: string
   ): Promise<Project> {
-   
-    await this.checkPermission(userId, 'project:edit', companyId, 'project', projectId);
-
     const project = await this.projectRepository.findById(projectId);
 
     if (!project || project.company_id !== companyId) {
@@ -167,8 +155,6 @@ export class ProjectService {
     userId: number,
     correlationId?: string
   ): Promise<void> {
-    await this.checkPermission(userId, 'project:delete', companyId, 'project', projectId);
-
     const project = await this.projectRepository.findById(projectId);
 
     if (!project || project.company_id !== companyId) {
@@ -196,8 +182,6 @@ export class ProjectService {
     userId: number,
     correlationId?: string
     ): Promise<ProjectMember> {
-    await this.checkPermission(userId, 'project:edit', companyId, 'project', projectId);
-
     const project = await this.projectRepository.findById(projectId);
 
     if (!project || project.company_id !== companyId) {
@@ -234,8 +218,6 @@ export class ProjectService {
     userId: number,
     correlationId?: string
   ): Promise<void> {
-    await this.checkPermission(userId, 'project:edit', companyId, 'project', projectId);
-
     const project = await this.projectRepository.findById(projectId);
 
     if (!project || project.company_id !== companyId) {
@@ -258,45 +240,6 @@ export class ProjectService {
         await this.projectMemberRepository.hardDelete(member.id);
 
         this.logger.info('Member removed from project', { projectId, userId, correlation_id: correlationId });
-  }
-
-  private async checkPermission(
-    userId: number,
-    permissionSlug: string,
-    companyId: number,
-    resourceType?: string | null,
-    resourceId?: number | null
-  ): Promise<void> {
-    try {
-      const hasPermission = await iamHttpClient.checkPermission({
-        userId,
-        permissionSlug,
-        companyId,
-        resourceType,
-        resourceId,
-      });
-
-      if (!hasPermission) {
-        throw new ClientErrorException(
-          'You do not have permission to perform this action',
-          ResponseStatus.FORBIDDEN
-        );
-      }
-    } catch (error) {
-      if (error instanceof ClientErrorException) {
-        throw error;
-      }
-      this.logger.error('Permission check failed', {
-        error: error instanceof Error ? error.message : String(error),
-        userId,
-        permissionSlug,
-        companyId,
-      });
-      throw new ClientErrorException(
-        'Permission check failed. Please try again later.',
-        ResponseStatus.INTERNAL_SERVER
-      );
-    }
   }
 
   private generateSlug(name: string, companyId: number): string {

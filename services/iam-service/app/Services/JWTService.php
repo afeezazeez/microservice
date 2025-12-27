@@ -12,29 +12,33 @@ use Firebase\JWT\Key;
 class JWTService
 {
     private string $secret;
-    private int $ttl;
+    private int $accessTokenTtl;
+    private int $refreshTokenTtl;
     private UserRepository $userRepository;
+    private PermissionService $permissionService;
 
-    public function __construct(UserRepository $userRepository)
+    public function __construct(UserRepository $userRepository, PermissionService $permissionService)
     {
         $this->secret = config('jwt.secret');
-        $this->ttl = (int) config('jwt.ttl');
+        $this->accessTokenTtl = (int) config('jwt.access_token_ttl', 5);
+        $this->refreshTokenTtl = (int) config('jwt.refresh_token_ttl', 1440);
         $this->userRepository = $userRepository;
+        $this->permissionService = $permissionService;
     }
 
-    public function generateToken(User $user): string
+    public function generateAccessToken(User $user): string
     {
-        // Load company relation if not already loaded
         if (!$user->relationLoaded('company')) {
             $user->load('company');
         }
 
-        // Get user's role slugs for this company
         $roles = $user->roles()
             ->where('user_roles.company_id', $user->company_id)
             ->whereNull('user_roles.resource_type')
             ->pluck('slug')
             ->toArray();
+
+        $permissions = $this->permissionService->getUserPermissions($user->id, $user->company_id);
 
         $payload = [
             'id' => $user->id,
@@ -43,14 +47,29 @@ class JWTService
             'company_id' => $user->company_id,
             'company_name' => $user->company?->name,
             'roles' => $roles,
+            'permissions' => $permissions,
             'iat' => now()->timestamp,
-            'exp' => now()->addMinutes($this->ttl)->timestamp,
+            'exp' => now()->addMinutes($this->accessTokenTtl)->timestamp,
+            'type' => 'access',
         ];
 
         return JWT::encode($payload, $this->secret, 'HS256');
     }
 
-    public function validateToken(string $token): ?array
+    public function generateRefreshToken(User $user): string
+    {
+        $payload = [
+            'id' => $user->id,
+            'company_id' => $user->company_id,
+            'iat' => now()->timestamp,
+            'exp' => now()->addMinutes($this->refreshTokenTtl)->timestamp,
+            'type' => 'refresh',
+        ];
+
+        return JWT::encode($payload, $this->secret, 'HS256');
+    }
+
+    public function validateToken(string $token, ?string $expectedType = null): ?array
     {
         try {
             if ($this->isTokenBlacklisted($token)) {
@@ -58,7 +77,13 @@ class JWTService
             }
 
             $decoded = JWT::decode($token, new Key($this->secret, 'HS256'));
-            return (array) $decoded;
+            $decodedArray = (array) $decoded;
+
+            if ($expectedType && ($decodedArray['type'] ?? null) !== $expectedType) {
+                return null;
+            }
+
+            return $decodedArray;
         } catch (\Exception $e) {
             Log::error('JWT validation failed: ' . $e->getMessage());
             return null;
@@ -71,7 +96,7 @@ class JWTService
             $decoded = JWT::decode($token, new Key($this->secret, 'HS256'));
             $decodedArray = (array) $decoded;
             
-            $expirationTime = $decodedArray['exp'] ?? now()->addMinutes($this->ttl)->timestamp;
+            $expirationTime = $decodedArray['exp'] ?? now()->addMinutes($this->accessTokenTtl)->timestamp;
             $ttl = max(0, $expirationTime - now()->timestamp);
 
             $tokenId = $this->getTokenId($token);
@@ -95,9 +120,9 @@ class JWTService
         return hash('sha256', $token);
     }
 
-    public function refreshToken(string $token): ?string
+    public function refreshAccessToken(string $refreshToken): ?string
     {
-        $decoded = $this->validateToken($token);
+        $decoded = $this->validateToken($refreshToken, 'refresh');
         
         if (!$decoded) {
             return null;
@@ -109,7 +134,11 @@ class JWTService
             return null;
         }
 
-        return $this->generateToken($user);
+        if ($user->company_id !== ($decoded['company_id'] ?? null)) {
+            return null;
+        }
+
+        return $this->generateAccessToken($user);
     }
 }
 

@@ -93,31 +93,31 @@ class AuthController extends Controller
 
     #[OA\Post(
         path: "/auth/refresh",
-        summary: "Refresh JWT token",
+        summary: "Refresh access token",
         tags: ["Authentication"],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\MediaType(
                 mediaType: "application/json",
                 schema: new OA\Schema(
-                    required: ["token"],
+                    required: ["refresh_token"],
                     properties: [
-                        new OA\Property(property: "token", type: "string", example: "eyJ0eXAiOiJKV1QiLCJhbGc..."),
+                        new OA\Property(property: "refresh_token", type: "string", example: "eyJ0eXAiOiJKV1QiLCJhbGc..."),
                     ]
                 )
             )
         ),
         responses: [
             new OA\Response(response: 200, description: "Token refreshed successfully"),
-            new OA\Response(response: 400, description: "Invalid or expired token"),
+            new OA\Response(response: 400, description: "Invalid or expired refresh token"),
         ]
     )]
     public function refreshToken(RefreshTokenRequest $request)
     {
-        $token = $this->authService->refreshToken($request->validated()['token']);
+        $accessToken = $this->authService->refreshAccessToken($request->validated()['refresh_token']);
 
         return successResponse('Token refreshed successfully', [
-            'token' => $token,
+            'access_token' => $accessToken,
         ]);
     }
 

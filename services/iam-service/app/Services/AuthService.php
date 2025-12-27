@@ -51,9 +51,9 @@ class AuthService
 
         $this->roleService->assignRole($user->id, 'super-admin', $company->id);
 
-        $token = $this->jwtService->generateToken($user);
+        $accessToken = $this->jwtService->generateAccessToken($user);
+        $refreshToken = $this->jwtService->generateRefreshToken($user);
 
-     
         return [
             'user' => [
                 'id' => $user->id,
@@ -67,7 +67,8 @@ class AuthService
                 'identifier' => $company->identifier,
                 'email' => $company->email,
             ],
-            'token' => $token,
+            'access_token' => $accessToken,
+            'refresh_token' => $refreshToken,
         ];
     }
 
@@ -90,17 +91,16 @@ class AuthService
             throw new ClientErrorException('Invalid credentials');
         }
 
-        // Load company relation
         $user->load('company');
 
-        // Get user's company-level roles
+        $accessToken = $this->jwtService->generateAccessToken($user);
+        $refreshToken = $this->jwtService->generateRefreshToken($user);
+
         $roles = $user->roles()
             ->where('user_roles.company_id', $user->company_id)
             ->whereNull('user_roles.resource_type')
             ->pluck('slug')
             ->toArray();
-
-        $token = $this->jwtService->generateToken($user);
 
         return [
             'user' => [
@@ -111,7 +111,8 @@ class AuthService
                 'company_name' => $user->company?->name,
                 'roles' => $roles,
             ],
-            'token' => $token,
+            'access_token' => $accessToken,
+            'refresh_token' => $refreshToken,
         ];
     }
 
@@ -134,23 +135,25 @@ class AuthService
             );
         }
 
-        $token = $this->jwtService->generateToken($user);
+        $accessToken = $this->jwtService->generateAccessToken($user);
+        $refreshToken = $this->jwtService->generateRefreshToken($user);
 
         return [
             'user' => $user,
-            'token' => $token,
+            'access_token' => $accessToken,
+            'refresh_token' => $refreshToken,
         ];
     }
 
-    public function refreshToken(string $token): string
+    public function refreshAccessToken(string $refreshToken): string
     {
-        $refreshedToken = $this->jwtService->refreshToken($token);
+        $newAccessToken = $this->jwtService->refreshAccessToken($refreshToken);
 
-        if (!$refreshedToken) {
-            throw new ClientErrorException('Invalid or expired token');
+        if (!$newAccessToken) {
+            throw new ClientErrorException('Invalid or expired refresh token');
         }
 
-        return $refreshedToken;
+        return $newAccessToken;
     }
 
     public function logout(?string $token): void

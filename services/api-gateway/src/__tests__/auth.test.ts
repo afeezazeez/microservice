@@ -18,8 +18,10 @@ function generateTestToken(payload: object = {}) {
     company_id: 1,
     company_name: 'Test Company',
     roles: ['admin'],
+    permissions: ['project:create', 'project:view'],
+    type: 'access',
     iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
+    exp: Math.floor(Date.now() / 1000) + 300, // 5 minutes from now
   };
   return jwt.sign({ ...defaultPayload, ...payload }, config.jwtSecret);
 }
@@ -33,7 +35,7 @@ describe('Auth routes proxy', () => {
     it('proxies request and returns upstream response', async () => {
       mockedIam.login = vi.fn().mockResolvedValue({
         status: 200,
-        data: { success: true, data: { user: { id: 1 }, token: 'abc' } },
+        data: { success: true, data: { user: { id: 1 }, access_token: 'abc', refresh_token: 'xyz' } },
       } as any);
 
       const res = await request(app)
@@ -41,7 +43,8 @@ describe('Auth routes proxy', () => {
         .send({ email: 'user@test.com', password: 'pass' })
         .expect(200);
 
-      expect(res.body.data.token).toBe('abc');
+      expect(res.body.data.access_token).toBe('abc');
+      expect(res.body.data.refresh_token).toBe('xyz');
       expect(mockedIam.login).toHaveBeenCalled();
     });
 
@@ -61,30 +64,30 @@ describe('Auth routes proxy', () => {
   });
 
   describe('POST /auth/refresh', () => {
-    it('proxies request and returns new token', async () => {
+    it('proxies request and returns new access token', async () => {
       mockedIam.refresh = vi.fn().mockResolvedValue({
         status: 200,
-        data: { success: true, data: { token: 'new-token' } },
+        data: { success: true, data: { access_token: 'new-access-token' } },
       } as any);
 
       const res = await request(app)
         .post('/auth/refresh')
-        .send({ token: 'old-token' })
+        .send({ refresh_token: 'old-refresh-token' })
         .expect(200);
 
-      expect(res.body.data.token).toBe('new-token');
+      expect(res.body.data.access_token).toBe('new-access-token');
       expect(mockedIam.refresh).toHaveBeenCalled();
     });
 
     it('returns error when refresh fails', async () => {
       mockedIam.refresh = vi.fn().mockRejectedValue({
         status: 400,
-        data: { success: false, error: 'Invalid or expired token' },
+        data: { success: false, error: 'Invalid or expired refresh token' },
       } as any);
 
       const res = await request(app)
         .post('/auth/refresh')
-        .send({ token: 'invalid' })
+        .send({ refresh_token: 'invalid' })
         .expect(400);
 
       expect(res.body.success).toBe(false);
@@ -95,7 +98,7 @@ describe('Auth routes proxy', () => {
     it('proxies request and returns company/user data', async () => {
       mockedIam.register = vi.fn().mockResolvedValue({
         status: 200,
-        data: { success: true, data: { company: { id: 1 }, user: { id: 2 }, token: 'xyz' } },
+        data: { success: true, data: { company: { id: 1 }, user: { id: 2 }, access_token: 'xyz', refresh_token: 'abc' } },
       } as any);
 
       const res = await request(app)
@@ -148,6 +151,8 @@ describe('Auth routes proxy', () => {
         company_id: 5,
         company_name: 'Acme Corp',
         roles: ['super-admin'],
+        permissions: ['project:create', 'project:view'],
+        type: 'access',
       });
 
       const res = await request(app)

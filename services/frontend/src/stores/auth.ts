@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { authApi, type User, type LoginPayload, type RegisterPayload } from '@/api/auth'
+import { authApi } from '@/api/auth'
+import type { User, LoginPayload, RegisterPayload } from '@/types/auth'
 import { showSuccess, showError } from '@/utils/toast'
 import router from '@/router'
 
@@ -39,9 +40,10 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authApi.register(payload)
       
       if (response.success && response.data) {
-        const { token, user: userData, company } = response.data
+        const { access_token, refresh_token, user: userData, company } = response.data
         
-        localStorage.setItem('access_token', token)
+        localStorage.setItem('access_token', access_token)
+        localStorage.setItem('refresh_token', refresh_token)
         user.value = userData
         
         showSuccess(`Account created! Welcome to ${company.name}, ${userData.name}!`)
@@ -66,9 +68,10 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authApi.login(payload)
       
       if (response.success && response.data) {
-        const { token, user: userData } = response.data
+        const { access_token, refresh_token, user: userData } = response.data
         
-        localStorage.setItem('access_token', token)
+        localStorage.setItem('access_token', access_token)
+        localStorage.setItem('refresh_token', refresh_token)
         user.value = userData
         
         showSuccess(`Welcome back! Logged in as ${userData.email}`)
@@ -90,6 +93,7 @@ export const useAuthStore = defineStore('auth', () => {
   function logout() {
     user.value = null
     localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
     showSuccess('Logged out. See you next time!')
     router.push('/login')
   }

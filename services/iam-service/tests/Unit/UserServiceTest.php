@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Repositories\CompanyRepository;
 use App\Repositories\UserRepository;
 use App\Services\UserService;
+use App\Services\RoleService;
 use Illuminate\Database\Eloquent\Collection;
 use Mockery;
 use Tests\TestCase;
@@ -23,6 +24,7 @@ class UserServiceTest extends TestCase
     {
         $userRepo = Mockery::mock(UserRepository::class);
         $companyRepo = Mockery::mock(CompanyRepository::class);
+        $roleService = Mockery::mock(RoleService::class);
 
         $user1 = new User();
         $user1->id = 1;
@@ -43,7 +45,7 @@ class UserServiceTest extends TestCase
             ->with(['company_id' => 1])
             ->andReturn($users);
 
-        $userService = new UserService($userRepo, $companyRepo);
+        $userService = new UserService($userRepo, $companyRepo, $roleService);
 
         $result = $userService->listUsers(1);
 
@@ -60,7 +62,8 @@ class UserServiceTest extends TestCase
         $userRepo = Mockery::mock(UserRepository::class);
         $companyRepo = Mockery::mock(CompanyRepository::class);
 
-        $userService = new UserService($userRepo, $companyRepo);
+        $roleService = Mockery::mock(RoleService::class);
+        $userService = new UserService($userRepo, $companyRepo, $roleService);
 
         $this->expectException(ClientErrorException::class);
         $this->expectExceptionMessage('Company ID not found');
@@ -84,7 +87,8 @@ class UserServiceTest extends TestCase
             ->with(['id' => 1, 'company_id' => 1])
             ->andReturn($user);
 
-        $userService = new UserService($userRepo, $companyRepo);
+        $roleService = Mockery::mock(RoleService::class);
+        $userService = new UserService($userRepo, $companyRepo, $roleService);
 
         $result = $userService->getUserById(1, 1);
 
@@ -104,7 +108,8 @@ class UserServiceTest extends TestCase
             ->with(['id' => 999, 'company_id' => 1])
             ->andReturn(null);
 
-        $userService = new UserService($userRepo, $companyRepo);
+        $roleService = Mockery::mock(RoleService::class);
+        $userService = new UserService($userRepo, $companyRepo, $roleService);
 
         $this->expectException(ClientErrorException::class);
         $this->expectExceptionMessage('User not found');
@@ -117,7 +122,8 @@ class UserServiceTest extends TestCase
         $userRepo = Mockery::mock(UserRepository::class);
         $companyRepo = Mockery::mock(CompanyRepository::class);
 
-        $userService = new UserService($userRepo, $companyRepo);
+        $roleService = Mockery::mock(RoleService::class);
+        $userService = new UserService($userRepo, $companyRepo, $roleService);
 
         $this->expectException(ClientErrorException::class);
         $this->expectExceptionMessage('Company ID not found');
@@ -151,7 +157,8 @@ class UserServiceTest extends TestCase
             ->once()
             ->with(1, ['name' => 'New Name']);
 
-        $userService = new UserService($userRepo, $companyRepo);
+        $roleService = Mockery::mock(RoleService::class);
+        $userService = new UserService($userRepo, $companyRepo, $roleService);
 
         $result = $userService->updateUser(1, 1, ['name' => 'New Name']);
 
@@ -186,7 +193,8 @@ class UserServiceTest extends TestCase
                 return isset($data['password']) && password_verify('newpassword', $data['password']);
             }));
 
-        $userService = new UserService($userRepo, $companyRepo);
+        $roleService = Mockery::mock(RoleService::class);
+        $userService = new UserService($userRepo, $companyRepo, $roleService);
 
         $result = $userService->updateUser(1, 1, ['password' => 'newpassword']);
 
@@ -203,7 +211,8 @@ class UserServiceTest extends TestCase
             ->with(['id' => 999, 'company_id' => 1])
             ->andReturn(null);
 
-        $userService = new UserService($userRepo, $companyRepo);
+        $roleService = Mockery::mock(RoleService::class);
+        $userService = new UserService($userRepo, $companyRepo, $roleService);
 
         $this->expectException(ClientErrorException::class);
         $this->expectExceptionMessage('User not found');
@@ -229,7 +238,8 @@ class UserServiceTest extends TestCase
             ->once()
             ->with(1);
 
-        $userService = new UserService($userRepo, $companyRepo);
+        $roleService = Mockery::mock(RoleService::class);
+        $userService = new UserService($userRepo, $companyRepo, $roleService);
 
         $userService->deleteUser(1, 1);
 
@@ -247,7 +257,8 @@ class UserServiceTest extends TestCase
             ->with(['id' => 999, 'company_id' => 1])
             ->andReturn(null);
 
-        $userService = new UserService($userRepo, $companyRepo);
+        $roleService = Mockery::mock(RoleService::class);
+        $userService = new UserService($userRepo, $companyRepo, $roleService);
 
         $this->expectException(ClientErrorException::class);
         $this->expectExceptionMessage('User not found');
@@ -260,7 +271,8 @@ class UserServiceTest extends TestCase
         $userRepo = Mockery::mock(UserRepository::class);
         $companyRepo = Mockery::mock(CompanyRepository::class);
 
-        $userService = new UserService($userRepo, $companyRepo);
+        $roleService = Mockery::mock(RoleService::class);
+        $userService = new UserService($userRepo, $companyRepo, $roleService);
 
         $this->expectException(ClientErrorException::class);
         $this->expectExceptionMessage('Company ID not found');

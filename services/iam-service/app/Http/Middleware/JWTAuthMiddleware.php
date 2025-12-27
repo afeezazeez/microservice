@@ -25,7 +25,7 @@ class JWTAuthMiddleware
             return errorResponse('Token not provided', [], null, [], 401);
         }
 
-        $decoded = $this->jwtService->validateToken($token);
+        $decoded = $this->jwtService->validateToken($token, 'access');
 
         if (!$decoded) {
             return errorResponse('Invalid or expired token', [], null, [], 401);

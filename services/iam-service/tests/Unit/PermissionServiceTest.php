@@ -65,7 +65,7 @@ class PermissionServiceTest extends TestCase
 
         $permissionService = new PermissionService($userRepo, $userRoleRepo, $permissionRepo);
 
-        $result = $permissionService->checkPermission(1, 'user:create');
+        $result = $permissionService->checkPermission(1, 'user:create', 1);
 
         $this->assertTrue($result);
     }
@@ -83,7 +83,7 @@ class PermissionServiceTest extends TestCase
 
         $permissionService = new PermissionService($userRepo, $userRoleRepo, $permissionRepo);
 
-        $result = $permissionService->checkPermission(999, 'user:create');
+        $result = $permissionService->checkPermission(999, 'user:create', 1);
 
         $this->assertFalse($result);
     }
@@ -110,7 +110,7 @@ class PermissionServiceTest extends TestCase
 
         $permissionService = new PermissionService($userRepo, $userRoleRepo, $permissionRepo);
 
-        $result = $permissionService->checkPermission(1, 'nonexistent:permission');
+        $result = $permissionService->checkPermission(1, 'nonexistent:permission', 1);
 
         $this->assertFalse($result);
     }
@@ -157,7 +157,7 @@ class PermissionServiceTest extends TestCase
 
         $permissionService = new PermissionService($userRepo, $userRoleRepo, $permissionRepo);
 
-        $result = $permissionService->checkPermission(1, 'user:create');
+        $result = $permissionService->checkPermission(1, 'user:create', 1);
 
         $this->assertFalse($result);
     }
@@ -209,7 +209,7 @@ class PermissionServiceTest extends TestCase
 
         $permissionService = new PermissionService($userRepo, $userRoleRepo, $permissionRepo);
 
-        $result = $permissionService->checkPermissions(1, ['user:create', 'user:update']);
+        $result = $permissionService->checkPermissions(1, ['user:create', 'user:update'], 1);
 
         $this->assertIsArray($result);
         $this->assertArrayHasKey('user:create', $result);
@@ -274,11 +274,11 @@ class PermissionServiceTest extends TestCase
         $permissionService = new PermissionService($userRepo, $userRoleRepo, $permissionRepo);
 
         // Should match global role
-        $result = $permissionService->checkPermission(1, 'project:update', 'project', 123);
+        $result = $permissionService->checkPermission(1, 'project:update', 1, 'project', 123);
         $this->assertTrue($result);
 
         // Should match resource-specific role
-        $result2 = $permissionService->checkPermission(1, 'project:update', 'project', 123);
+        $result2 = $permissionService->checkPermission(1, 'project:update', 1, 'project', 123);
         $this->assertTrue($result2);
     }
 }

@@ -10,6 +10,8 @@ export interface JwtPayload {
   company_id: number;
   company_name: string | null;
   roles: string[];
+  permissions?: string[];
+  type?: string;
   iat: number;
   exp: number;
 }
@@ -21,6 +23,7 @@ export interface AuthenticatedUser {
   company_id: number;
   company_name: string | null;
   roles: string[];
+  permissions?: string[];
 }
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -34,6 +37,10 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   try {
     const decoded = jwt.verify(token, config.jwtSecret) as JwtPayload;
     
+    if (decoded.type && decoded.type !== 'access') {
+      return sendErrorResponse(res, 'Invalid token type', null, [], [], 401);
+    }
+    
     (req as any).user = {
       id: decoded.id,
       email: decoded.email,
@@ -41,6 +48,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
       company_id: decoded.company_id,
       company_name: decoded.company_name,
       roles: decoded.roles || [],
+      permissions: decoded.permissions || [],
     } as AuthenticatedUser;
     
     (req as any).token = token;

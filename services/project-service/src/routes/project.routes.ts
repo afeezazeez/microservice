@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ProjectController } from '../controllers/project.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
+import { requirePermission } from '../middlewares/permission.middleware';
 import { validateBody } from '../middlewares/request-validator';
 import { CreateProjectDto } from '../dtos/project/create-project.dto';
 import { UpdateProjectDto } from '../dtos/project/update-project.dto';
@@ -52,7 +53,7 @@ router.use(authMiddleware);
  *       401:
  *         description: Unauthorized
  */
-router.post('/', validateBody(CreateProjectDto), projectController.createProject);
+router.post('/', requirePermission('project:create'), validateBody(CreateProjectDto), projectController.createProject);
 
 /**
  * @swagger
@@ -93,7 +94,7 @@ router.post('/', validateBody(CreateProjectDto), projectController.createProject
  *       401:
  *         description: Unauthorized
  */
-router.get('/', projectController.getProjects);
+router.get('/', requirePermission('project:view'), projectController.getProjects);
 
 /**
  * @swagger
@@ -118,7 +119,7 @@ router.get('/', projectController.getProjects);
  *       401:
  *         description: Unauthorized
  */
-router.get('/:id', projectController.getProject);
+router.get('/:id', requirePermission('project:view'), projectController.getProject);
 
 /**
  * @swagger
@@ -172,7 +173,7 @@ router.get('/:id', projectController.getProject);
  *       401:
  *         description: Unauthorized
  */
-router.put('/:id', validateBody(UpdateProjectDto), projectController.updateProject);
+router.put('/:id', requirePermission('project:edit'), validateBody(UpdateProjectDto), projectController.updateProject);
 
 /**
  * @swagger
@@ -197,7 +198,7 @@ router.put('/:id', validateBody(UpdateProjectDto), projectController.updateProje
  *       401:
  *         description: Unauthorized
  */
-router.delete('/:id', projectController.deleteProject);
+router.delete('/:id', requirePermission('project:delete'), projectController.deleteProject);
 
 /**
  * @swagger
@@ -236,7 +237,7 @@ router.delete('/:id', projectController.deleteProject);
  *       401:
  *         description: Unauthorized
  */
-router.post('/:id/members', validateBody(AddMemberDto), projectController.addMember);
+router.post('/:id/members', requirePermission('project:edit'), validateBody(AddMemberDto), projectController.addMember);
 
 /**
  * @swagger
@@ -267,6 +268,6 @@ router.post('/:id/members', validateBody(AddMemberDto), projectController.addMem
  *       401:
  *         description: Unauthorized
  */
-router.delete('/:id/members/:userId', projectController.removeMember);
+router.delete('/:id/members/:userId', requirePermission('project:edit'), projectController.removeMember);
 
 export default router;

@@ -1,46 +1,13 @@
-import { apiClient, type ApiResponse } from './client'
-
-export interface User {
-  id: number
-  email: string
-  name: string
-  company_id: number
-  company_name: string | null
-  roles: string[]
-}
-
-export interface MeResponse {
-  user: User
-}
-
-export interface RegisterResponse {
-  user: User
-  company: { id: number; name: string; identifier: string; email: string }
-  token: string
-}
-
-export interface LoginResponse {
-  user: User
-  token: string
-}
-
-export interface RegisterPayload {
-  company: {
-    name: string
-    email: string
-  }
-  user: {
-    name: string
-    email: string
-    password: string
-    password_confirmation: string
-  }
-}
-
-export interface LoginPayload {
-  email: string
-  password: string
-}
+import { apiClient, plainAxios } from './client'
+import type { ApiResponse } from '@/types/api'
+import type {
+  RegisterPayload,
+  LoginPayload,
+  RegisterResponse,
+  LoginResponse,
+  MeResponse,
+  RefreshTokenResponse,
+} from '@/types/auth'
 
 export const authApi = {
   async register(payload: RegisterPayload): Promise<ApiResponse<RegisterResponse>> {
@@ -58,8 +25,8 @@ export const authApi = {
     return data
   },
 
-  async refresh(token: string): Promise<ApiResponse<{ token: string }>> {
-    const { data } = await apiClient.post('/auth/refresh', { token })
+  async refresh(refreshToken: string): Promise<ApiResponse<RefreshTokenResponse>> {
+    const { data } = await plainAxios.post('/auth/refresh', { refresh_token: refreshToken })
     return data
   },
 }

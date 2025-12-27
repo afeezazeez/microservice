@@ -76,6 +76,40 @@ class PermissionService
         return $results;
     }
 
+    public function getUserPermissions(int $userId, int $companyId): array
+    {
+        $conditions = [
+            'user_id' => $userId,
+            'company_id' => $companyId,
+        ];
+
+        $userRoles = $this->userRoleRepository->findAll($conditions, ['role.permissions']);
+
+        $globalRoles = $userRoles->filter(function ($userRole) {
+            return $userRole->resource_type === null && $userRole->resource_id === null;
+        });
+
+        $permissionSlugs = [];
+
+        foreach ($globalRoles as $userRole) {
+            $role = $userRole->role;
+            
+            if (!$role) {
+                continue;
+            }
+
+            $rolePermissions = $role->permissions;
+            
+            foreach ($rolePermissions as $permission) {
+                if (!in_array($permission->slug, $permissionSlugs)) {
+                    $permissionSlugs[] = $permission->slug;
+                }
+            }
+        }
+
+        return $permissionSlugs;
+    }
+
     private function getRelevantUserRoles(int $userId, int $companyId, ?string $resourceType = null, ?int $resourceId = null): Collection
     {
         $conditions = [

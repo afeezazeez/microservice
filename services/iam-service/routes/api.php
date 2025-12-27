@@ -3,7 +3,6 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
-use App\Http\Controllers\PermissionController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -27,10 +26,5 @@ Route::prefix('roles')->middleware('jwt.auth')->group(function () {
     Route::get('/user/{userId}', [RoleController::class, 'getUserRoles']);
     Route::post('/assign', [RoleController::class, 'assignRole']);
     Route::post('/remove', [RoleController::class, 'removeRole']);
-});
-
-Route::prefix('permissions')->middleware('jwt.auth')->group(function () {
-  Route::post('/check', [PermissionController::class, 'check']);
-  Route::post('/check-batch', [PermissionController::class, 'checkBatch']);
 });
 

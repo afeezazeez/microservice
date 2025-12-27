@@ -58,10 +58,18 @@ class AuthServiceTest extends TestCase
             ->once()
             ->with($user->id, 'super-admin', $company->id);
 
-        $jwtService->shouldReceive('generateToken')
+        $accessToken = 'mock-access-token';
+        $refreshToken = 'mock-refresh-token';
+
+        $jwtService->shouldReceive('generateAccessToken')
             ->once()
             ->with($user)
-            ->andReturn($token);
+            ->andReturn($accessToken);
+
+        $jwtService->shouldReceive('generateRefreshToken')
+            ->once()
+            ->with($user)
+            ->andReturn($refreshToken);
 
         $authService = new AuthService($userRepo, $companyRepo, $roleService, $jwtService);
 
@@ -73,8 +81,10 @@ class AuthServiceTest extends TestCase
         $this->assertIsArray($result);
         $this->assertArrayHasKey('user', $result);
         $this->assertArrayHasKey('company', $result);
-        $this->assertArrayHasKey('token', $result);
-        $this->assertEquals($token, $result['token']);
+        $this->assertArrayHasKey('access_token', $result);
+        $this->assertArrayHasKey('refresh_token', $result);
+        $this->assertEquals($accessToken, $result['access_token']);
+        $this->assertEquals($refreshToken, $result['refresh_token']);
         $this->assertEquals($user->id, $result['user']['id']);
         $this->assertEquals($company->id, $result['company']['id']);
     }
@@ -129,10 +139,18 @@ class AuthServiceTest extends TestCase
             ->once()
             ->andReturn($user);
 
-        $jwtService->shouldReceive('generateToken')
+        $accessToken = 'mock-access-token';
+        $refreshToken = 'mock-refresh-token';
+
+        $jwtService->shouldReceive('generateAccessToken')
             ->once()
             ->with($user)
-            ->andReturn($token);
+            ->andReturn($accessToken);
+
+        $jwtService->shouldReceive('generateRefreshToken')
+            ->once()
+            ->with($user)
+            ->andReturn($refreshToken);
 
         $authService = new AuthService($userRepo, $companyRepo, $roleService, $jwtService);
 
@@ -140,10 +158,12 @@ class AuthServiceTest extends TestCase
 
         $this->assertIsArray($result);
         $this->assertArrayHasKey('user', $result);
-        $this->assertArrayHasKey('token', $result);
-        $this->assertEquals($token, $result['token']);
-        $this->assertIsString($result['token']);
-        $this->assertNotEmpty($result['token']);
+        $this->assertArrayHasKey('access_token', $result);
+        $this->assertArrayHasKey('refresh_token', $result);
+        $this->assertEquals($accessToken, $result['access_token']);
+        $this->assertEquals($refreshToken, $result['refresh_token']);
+        $this->assertIsString($result['access_token']);
+        $this->assertNotEmpty($result['access_token']);
         $this->assertArrayHasKey('company_name', $result['user']);
         $this->assertArrayHasKey('roles', $result['user']);
     }
@@ -216,10 +236,18 @@ class AuthServiceTest extends TestCase
             ->once()
             ->with($user->id, 'project-manager', 1, null, null);
 
-        $jwtService->shouldReceive('generateToken')
+        $accessToken = 'mock-access-token';
+        $refreshToken = 'mock-refresh-token';
+
+        $jwtService->shouldReceive('generateAccessToken')
             ->once()
             ->with($user)
-            ->andReturn($token);
+            ->andReturn($accessToken);
+
+        $jwtService->shouldReceive('generateRefreshToken')
+            ->once()
+            ->with($user)
+            ->andReturn($refreshToken);
 
         $authService = new AuthService($userRepo, $companyRepo, $roleService, $jwtService);
 
@@ -230,51 +258,53 @@ class AuthServiceTest extends TestCase
 
         $this->assertIsArray($result);
         $this->assertArrayHasKey('user', $result);
-        $this->assertArrayHasKey('token', $result);
-        $this->assertEquals($token, $result['token']);
+        $this->assertArrayHasKey('access_token', $result);
+        $this->assertArrayHasKey('refresh_token', $result);
+        $this->assertEquals($accessToken, $result['access_token']);
+        $this->assertEquals($refreshToken, $result['refresh_token']);
     }
 
-    public function test_refresh_token_returns_new_token(): void
+    public function test_refresh_access_token_returns_new_access_token(): void
     {
         $userRepo = Mockery::mock(UserRepository::class);
         $companyRepo = Mockery::mock(CompanyRepository::class);
         $roleService = Mockery::mock(RoleService::class);
         $jwtService = Mockery::mock(JWTService::class);
 
-        $oldToken = 'old-token';
-        $newToken = 'new-token';
+        $refreshToken = 'refresh-token';
+        $newAccessToken = 'new-access-token';
 
-        $jwtService->shouldReceive('refreshToken')
+        $jwtService->shouldReceive('refreshAccessToken')
             ->once()
-            ->with($oldToken)
-            ->andReturn($newToken);
+            ->with($refreshToken)
+            ->andReturn($newAccessToken);
 
         $authService = new AuthService($userRepo, $companyRepo, $roleService, $jwtService);
 
-        $result = $authService->refreshToken($oldToken);
+        $result = $authService->refreshAccessToken($refreshToken);
 
-        $this->assertEquals($newToken, $result);
+        $this->assertEquals($newAccessToken, $result);
         $this->assertIsString($result);
     }
 
-    public function test_refresh_token_throws_exception_for_invalid_token(): void
+    public function test_refresh_access_token_throws_exception_for_invalid_token(): void
     {
         $userRepo = Mockery::mock(UserRepository::class);
         $companyRepo = Mockery::mock(CompanyRepository::class);
         $roleService = Mockery::mock(RoleService::class);
         $jwtService = Mockery::mock(JWTService::class);
 
-        $jwtService->shouldReceive('refreshToken')
+        $jwtService->shouldReceive('refreshAccessToken')
             ->once()
-            ->with('invalid-token')
+            ->with('invalid-refresh-token')
             ->andReturn(null);
 
         $authService = new AuthService($userRepo, $companyRepo, $roleService, $jwtService);
 
         $this->expectException(ClientErrorException::class);
-        $this->expectExceptionMessage('Invalid or expired token');
+        $this->expectExceptionMessage('Invalid or expired refresh token');
 
-        $authService->refreshToken('invalid-token');
+        $authService->refreshAccessToken('invalid-refresh-token');
     }
 
     public function test_logout_blacklists_token(): void

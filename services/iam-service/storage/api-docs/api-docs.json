@@ -137,7 +137,7 @@
                 "tags": [
                     "Authentication"
                 ],
-                "summary": "Refresh JWT token",
+                "summary": "Refresh access token",
                 "operationId": "ac2aa1ca4072f2aa38d66cf534243d35",
                 "requestBody": {
                     "required": true,
@@ -145,10 +145,10 @@
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "token"
+                                    "refresh_token"
                                 ],
                                 "properties": {
-                                    "token": {
+                                    "refresh_token": {
                                         "type": "string",
                                         "example": "eyJ0eXAiOiJKV1QiLCJhbGc..."
                                     }
@@ -163,7 +163,7 @@
                         "description": "Token refreshed successfully"
                     },
                     "400": {
-                        "description": "Invalid or expired token"
+                        "description": "Invalid or expired refresh token"
                     }
                 }
             }

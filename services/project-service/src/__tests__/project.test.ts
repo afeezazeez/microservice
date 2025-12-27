@@ -48,6 +48,7 @@ const mockUser = {
   company_id: 1,
   company_name: 'Test Company',
   roles: ['user'],
+  permissions: ['project:create', 'project:view', 'project:edit', 'project:delete'],
 };
 
 // Mock JWT payload
@@ -58,8 +59,10 @@ const mockJwtPayload = {
   company_id: mockUser.company_id,
   company_name: mockUser.company_name,
   roles: mockUser.roles,
+  permissions: mockUser.permissions,
+  type: 'access',
   iat: Math.floor(Date.now() / 1000),
-  exp: Math.floor(Date.now() / 1000) + 3600,
+  exp: Math.floor(Date.now() / 1000) + 300,
 };
 
 // Helper to generate auth headers
@@ -131,8 +134,8 @@ describe('Project API', () => {
         .expect(201);
 
       expect(res.body.success).toBe(true);
-      expect(res.body.data.data.name).toBe(projectData.name);
-      expect(res.body.data.data.company_id).toBe(mockUser.company_id);
+      expect(res.body.data.name).toBe(projectData.name);
+      expect(res.body.data.company_id).toBe(mockUser.company_id);
       expect(mockProjectServiceInstance.createProject).toHaveBeenCalledWith(
         expect.objectContaining({ name: projectData.name }),
         mockUser.id,
@@ -226,8 +229,8 @@ describe('Project API', () => {
         .expect(200);
 
       expect(res.body.success).toBe(true);
-      expect(res.body.data.data.id).toBe(1);
-      expect(mockProjectServiceInstance.fetchProject).toHaveBeenCalledWith(1, mockUser.company_id);
+      expect(res.body.data.id).toBe(1);
+      expect(mockProjectServiceInstance.fetchProject).toHaveBeenCalledWith(1, mockUser.company_id, mockUser.id);
     });
 
     it('should return 404 when project not found', async () => {
@@ -259,11 +262,12 @@ describe('Project API', () => {
         .expect(200);
 
       expect(res.body.success).toBe(true);
-      expect(res.body.data.data.name).toBe('Updated Name');
+      expect(res.body.data.name).toBe('Updated Name');
       expect(mockProjectServiceInstance.updateProject).toHaveBeenCalledWith(
         1,
         expect.objectContaining({ name: 'Updated Name' }),
         mockUser.company_id,
+        mockUser.id,
         'test-correlation-id'
       );
     });
@@ -299,6 +303,7 @@ describe('Project API', () => {
       expect(mockProjectServiceInstance.deleteProject).toHaveBeenCalledWith(
         1,
         mockUser.company_id,
+        mockUser.id,
         'test-correlation-id'
       );
     });
@@ -319,6 +324,7 @@ describe('Project API', () => {
       expect(mockProjectServiceInstance.deleteProject).toHaveBeenCalledWith(
         99999,
         mockUser.company_id,
+        mockUser.id,
         'test-correlation-id'
       );
     });
@@ -336,11 +342,12 @@ describe('Project API', () => {
         .expect(201);
 
       expect(res.body.success).toBe(true);
-      expect(res.body.data.data.user_id).toBe(2);
+      expect(res.body.data.user_id).toBe(2);
       expect(mockProjectServiceInstance.addMember).toHaveBeenCalledWith(
         1,
         expect.objectContaining({ user_id: 2 }),
         mockUser.company_id,
+        mockUser.id,
         'test-correlation-id'
       );
     });
@@ -371,6 +378,7 @@ describe('Project API', () => {
         1,
         2,
         mockUser.company_id,
+        mockUser.id,
         'test-correlation-id'
       );
     });
@@ -392,6 +400,7 @@ describe('Project API', () => {
         1,
         999,
         mockUser.company_id,
+        mockUser.id,
         'test-correlation-id'
       );
     });

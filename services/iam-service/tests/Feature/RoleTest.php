@@ -131,7 +131,7 @@ class RoleTest extends FeatureTestCase
     protected function getJwtToken(User $user): string
     {
         $jwtService = app(JWTService::class);
-        return $jwtService->generateToken($user);
+        return $jwtService->generateAccessToken($user);
     }
 }
 

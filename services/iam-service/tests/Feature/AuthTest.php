@@ -35,7 +35,8 @@ class AuthTest extends FeatureTestCase
                 'data' => [
                     'user' => ['id', 'name', 'email', 'company_id'],
                     'company' => ['id', 'name', 'identifier', 'email'],
-                    'token',
+                    'access_token',
+                    'refresh_token',
                 ],
             ]);
 
@@ -82,11 +83,13 @@ class AuthTest extends FeatureTestCase
                 'message',
                 'data' => [
                     'user' => ['id', 'name', 'email', 'company_id'],
-                    'token',
+                    'access_token',
+                    'refresh_token',
                 ],
             ]);
 
-        $this->assertNotEmpty($response->json('data.token'));
+        $this->assertNotEmpty($response->json('data.access_token'));
+        $this->assertNotEmpty($response->json('data.refresh_token'));
     }
 
     public function test_login_fails_for_invalid_credentials(): void
@@ -168,7 +171,7 @@ class AuthTest extends FeatureTestCase
         $response2->assertStatus(401);
     }
 
-    public function test_refresh_token_returns_new_token(): void
+    public function test_refresh_token_returns_new_access_token(): void
     {
         $company = Company::factory()->create();
         $user = User::factory()->create([
@@ -177,27 +180,33 @@ class AuthTest extends FeatureTestCase
             'password' => Hash::make('password123'),
         ]);
 
-        $token = $this->getJwtToken($user);
+        $refreshToken = $this->getRefreshToken($user);
 
         $response = $this->postJson('/api/auth/refresh', [
-            'token' => $token,
+            'refresh_token' => $refreshToken,
         ]);
 
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'success',
                 'message',
-                'data' => ['token'],
+                'data' => ['access_token'],
             ]);
 
-        $newToken = $response->json('data.token');
-        $this->assertNotEmpty($newToken);
+        $newAccessToken = $response->json('data.access_token');
+        $this->assertNotEmpty($newAccessToken);
     }
 
     protected function getJwtToken(User $user): string
     {
         $jwtService = app(JWTService::class);
-        return $jwtService->generateToken($user);
+        return $jwtService->generateAccessToken($user);
+    }
+
+    protected function getRefreshToken(User $user): string
+    {
+        $jwtService = app(JWTService::class);
+        return $jwtService->generateRefreshToken($user);
     }
 }
 
