@@ -1,0 +1,60 @@
+<h2 style="margin: 0 0 20px 0; color: #ffffff; font-size: 24px; font-weight: 600;">
+  Welcome to TaskFlow! 🎉
+</h2>
+
+<p style="margin: 0 0 20px 0; color: #cbd5e1; font-size: 16px;">
+  Hello <strong style="color: #ffffff;"><%= userName %></strong>,
+</p>
+
+<p style="margin: 0 0 20px 0; color: #cbd5e1; font-size: 16px;">
+  You've been invited to join <strong style="color: #ffffff;"><%= companyName %></strong> on TaskFlow. We're excited to have you on board!
+</p>
+
+<div style="background-color: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 20px; margin: 30px 0;">
+  <h3 style="margin: 0 0 15px 0; color: #ffffff; font-size: 18px; font-weight: 600;">
+    Your Login Credentials
+  </h3>
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td style="padding: 8px 0; color: #94a3b8; font-size: 14px; width: 100px;">Email:</td>
+      <td style="padding: 8px 0; color: #ffffff; font-size: 14px; font-weight: 600;"><%= userEmail %></td>
+    </tr>
+    <tr>
+      <td style="padding: 8px 0; color: #94a3b8; font-size: 14px;">Password:</td>
+      <td style="padding: 8px 0; color: #ffffff; font-size: 14px; font-weight: 600;"><%= userEmail %></td>
+    </tr>
+  </table>
+  <p style="margin: 15px 0 0 0; color: #fbbf24; font-size: 13px;">
+    ⚠️ Your temporary password is your email address. Please change it after your first login.
+  </p>
+</div>
+
+<div style="text-align: center; margin: 35px 0;">
+  <a href="<%= loginUrl %>" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);">
+    Login to TaskFlow
+  </a>
+</div>
+
+<p style="margin: 30px 0 20px 0; color: #94a3b8; font-size: 14px;">
+  If the button doesn't work, copy and paste this link into your browser:
+</p>
+<p style="margin: 0 0 30px 0; word-break: break-all;">
+  <a href="<%= loginUrl %>" style="color: #60a5fa; text-decoration: underline; font-size: 14px;"><%= loginUrl %></a>
+</p>
+
+<div style="border-top: 1px solid #334155; padding-top: 20px; margin-top: 30px;">
+  <p style="margin: 0 0 10px 0; color: #cbd5e1; font-size: 14px; font-weight: 600;">
+    Next Steps:
+  </p>
+  <ol style="margin: 0; padding-left: 20px; color: #94a3b8; font-size: 14px; line-height: 1.8;">
+    <li>Click the login button above or visit the login page</li>
+    <li>Enter your email and temporary password (your email address)</li>
+    <li>Change your password to something secure</li>
+    <li>Start collaborating with your team!</li>
+  </ol>
+</div>
+
+<p style="margin: 30px 0 0 0; color: #94a3b8; font-size: 14px;">
+  If you didn't expect this invitation, please ignore this email.
+</p>
+

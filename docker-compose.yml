@@ -225,24 +225,20 @@ services:
   #   networks:
   #     - microservices-network
 
-  # notification-service:
-  #   build:
-  #     context: ./services/notification-service
-  #     dockerfile: Dockerfile
-  #   container_name: task-notification-service
-  #   ports:
-  #     - "3003:3003"
-  #   env_file:
-  #     - ./services/notification-service/.env
-  #   volumes:
-  #     - ./services/notification-service:/app
-  #   depends_on:
-  #     mysql:
-  #       condition: service_healthy
-  #     rabbitmq:
-  #       condition: service_healthy
-  #   networks:
-  #     - microservices-network
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - "3003:3003"
+    env_file:
+      - ./services/notification-service/.env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices-network
 
   # file-service:
   #   build:

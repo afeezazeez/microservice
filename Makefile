@@ -1,7 +1,7 @@
 .PHONY: help setup build up down restart logs clean \
 	iam-setup iam-up iam-migrate iam-seed iam-swagger iam-test \
-	project-setup project-swagger \
-	task-setup notification-setup file-setup analytics-setup api-gateway-setup frontend-setup \
+	project-setup project-up project-migrate project-swagger \
+	task-setup notification-setup notification-up file-setup analytics-setup api-gateway-setup frontend-setup \
 	status
 
 # Colors
@@ -24,7 +24,7 @@ build: ## Build all images
 
 up: ## Start all Docker containers (infra + services)
 	@echo "$(BLUE)📦 Starting Docker containers...$(NC)"
-	@docker-compose up -d --build traefik mysql redis rabbitmq minio loki promtail grafana iam-service iam-nginx api-gateway frontend project-service || echo "$(YELLOW)⚠️  Some services may not be available yet$(NC)"
+	@docker-compose up -d --build traefik mysql redis rabbitmq minio loki promtail grafana iam-service iam-nginx api-gateway frontend project-service notification-service || echo "$(YELLOW)⚠️  Some services may not be available yet$(NC)"
 	@echo "$(BLUE)⏳ Waiting for services to be healthy...$(NC)"
 	@sleep 10
 
@@ -106,8 +106,13 @@ project-swagger: ## Generate Swagger docs for Project service
 task-setup:
 	@echo "$(YELLOW)⚠️  Task service setup is not implemented yet (skipping).$(NC)"
 
-notification-setup:
-	@echo "$(YELLOW)⚠️  Notification service setup is not implemented yet (skipping).$(NC)"
+notification-setup: notification-up ## Setup Notification service (start)
+
+notification-up: ## Start Notification service
+	@echo "$(BLUE)🚀 Starting Notification service...$(NC)"
+	@docker-compose up -d --build notification-service || echo "$(YELLOW)⚠️  Notification service may not be available yet$(NC)"
+	@echo "$(BLUE)⏳ Waiting for Notification service to be healthy...$(NC)"
+	@sleep 5
 
 file-setup:
 	@echo "$(YELLOW)⚠️  File service setup is not implemented yet (skipping).$(NC)"
@@ -154,7 +159,7 @@ status: ## Display all service URLs and documentation links
 	@if docker-compose ps | grep -q "notification-service.*Up"; then \
 		echo "$(YELLOW)✓ Notification Service (Node.js)$(NC)"; \
 		echo "    🌐 API:  https://notification-service.afeez-dev.local"; \
-		echo "    📚 Docs: https://notification-service.afeez-dev.local/api/docs"; \
+		echo "    💚 Health: https://notification-service.afeez-dev.local/health"; \
 		echo ""; \
 	fi
 	@if docker-compose ps | grep -q "file-service.*Up"; then \
