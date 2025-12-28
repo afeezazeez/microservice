@@ -18,8 +18,10 @@ const showEditModal = ref(false)
 const showDeleteModal = ref(false)
 const showViewModal = ref(false)
 const showAddMemberModal = ref(false)
+const showDeleteMemberModal = ref(false)
 const selectedProject = ref<Project | null>(null)
 const projectToDelete = ref<number | null>(null)
+const memberToDelete = ref<number | null>(null)
 
 const createForm = ref({
   name: '',
@@ -127,9 +129,16 @@ async function handleAddMember() {
   }
 }
 
-async function handleRemoveMember(userId: number) {
-  if (!selectedProject.value) return
-  await projectsStore.removeMember(selectedProject.value.id, userId)
+function openDeleteMemberModal(userId: number) {
+  memberToDelete.value = userId
+  showDeleteMemberModal.value = true
+}
+
+async function handleRemoveMember() {
+  if (!selectedProject.value || memberToDelete.value === null) return
+  await projectsStore.removeMember(selectedProject.value.id, memberToDelete.value)
+  showDeleteMemberModal.value = false
+  memberToDelete.value = null
 }
 
 function getStatusColor(status: string) {
@@ -224,6 +233,7 @@ onMounted(() => {
                     Edit
                   </button>
                   <button
+                    v-if="project.created_by !== authStore.user?.id"
                     @click="openDeleteModal(project.id)"
                     class="text-red-400 hover:text-red-300 cursor-pointer"
                   >
@@ -267,6 +277,7 @@ onMounted(() => {
                   </svg>
                 </button>
                 <button
+                  v-if="project.created_by !== authStore.user?.id"
                   @click="openDeleteModal(project.id)"
                   class="text-red-400 hover:text-red-300 cursor-pointer"
                   aria-label="Delete project"
@@ -473,7 +484,8 @@ onMounted(() => {
                   </p>
                 </div>
                 <button
-                  @click="handleRemoveMember(member.user_id)"
+                  v-if="selectedProject?.created_by !== member.user_id"
+                  @click="openDeleteMemberModal(member.user_id)"
                   class="text-red-400 hover:text-red-300 cursor-pointer"
                 >
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -528,13 +540,22 @@ onMounted(() => {
         </form>
       </Modal>
 
-      <!-- Delete Confirmation Modal -->
+      <!-- Delete Project Confirmation Modal -->
       <ConfirmModal
         :is-open="showDeleteModal"
         title="Delete Project"
         message="Are you sure you want to delete this project? This action cannot be undone."
         @confirm="handleDelete"
         @close="showDeleteModal = false"
+      />
+
+      <!-- Delete Member Confirmation Modal -->
+      <ConfirmModal
+        :is-open="showDeleteMemberModal"
+        title="Remove Member"
+        :message="`Are you sure you want to remove ${memberToDelete ? getMemberName(memberToDelete) : 'this member'} from the project?`"
+        @confirm="handleRemoveMember"
+        @close="showDeleteMemberModal = false"
       />
     </div>
   </Layout>

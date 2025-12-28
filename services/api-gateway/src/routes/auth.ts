@@ -1,9 +1,12 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth';
+import { authRateLimiter } from '../middleware/security';
 import { login, refresh, register } from '../proxy/iamProxy';
 import { sendSuccessResponse, sendErrorResponse } from '../utils/response';
 
 const router = Router();
+
+router.use(authRateLimiter);
 
 router.post('/login', async (req, res) => {
   try {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import Layout from '@/components/Layout.vue'
 import Modal from '@/components/Modal.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
@@ -12,6 +12,20 @@ import type { InviteUserPayload } from '@/types/auth/users'
 const usersStore = useUsersStore()
 const authStore = useAuthStore()
 const rolesStore = useRolesStore()
+
+const isSuperAdmin = computed(() => {
+  return authStore.user?.roles?.includes('super-admin') ?? false
+})
+
+function canEditUser(user: User): boolean {
+  if (isSuperAdmin.value) return true
+  return user.id === authStore.user?.id
+}
+
+function canDeleteUser(user: User): boolean {
+  if (!isSuperAdmin.value) return false
+  return user.id !== authStore.user?.id
+}
 
 const showInviteModal = ref(false)
 const showEditModal = ref(false)
@@ -120,7 +134,10 @@ onMounted(() => {
             <tbody class="divide-y divide-[var(--color-border)]">
               <tr v-for="user in usersStore.users" :key="user.id" class="hover:bg-[var(--color-bg-elevated)]">
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-white">{{ user.name }}</div>
+                  <div class="text-sm font-medium text-white">
+                    {{ user.name }}
+                    <span v-if="user.id === authStore.user?.id" class="text-zinc-400 text-xs ml-2">(You)</span>
+                  </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="text-sm text-zinc-400">{{ user.email }}</div>
@@ -143,13 +160,14 @@ onMounted(() => {
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
+                    v-if="canEditUser(user)"
                     @click="openEditModal(user)"
                     class="text-indigo-400 hover:text-indigo-300 mr-4 cursor-pointer"
                   >
                     Edit
                   </button>
                   <button
-                    v-if="user.id !== authStore.user?.id"
+                    v-if="canDeleteUser(user)"
                     @click="openDeleteModal(user.id)"
                     class="text-red-400 hover:text-red-300 cursor-pointer"
                   >
@@ -169,11 +187,15 @@ onMounted(() => {
           >
             <div class="flex items-start justify-between mb-3">
               <div class="flex-1 min-w-0">
-                <div class="text-base font-medium text-white truncate">{{ user.name }}</div>
+                <div class="text-base font-medium text-white truncate">
+                  {{ user.name }}
+                  <span v-if="user.id === authStore.user?.id" class="text-zinc-400 text-xs ml-2">(You)</span>
+                </div>
                 <div class="text-sm text-zinc-400 truncate mt-1">{{ user.email }}</div>
               </div>
               <div class="flex gap-2 ml-4">
                 <button
+                  v-if="canEditUser(user)"
                   @click="openEditModal(user)"
                   class="text-indigo-400 hover:text-indigo-300 cursor-pointer"
                   aria-label="Edit user"
@@ -183,7 +205,7 @@ onMounted(() => {
                   </svg>
                 </button>
                 <button
-                  v-if="user.id !== authStore.user?.id"
+                  v-if="canDeleteUser(user)"
                   @click="openDeleteModal(user.id)"
                   class="text-red-400 hover:text-red-300 cursor-pointer"
                   aria-label="Delete user"

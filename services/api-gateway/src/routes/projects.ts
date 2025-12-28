@@ -18,7 +18,7 @@ router.get('/', authMiddleware, async (req, res) => {
       return res.status(status).json(errorData);
     }
     
-    sendErrorResponse(res, 'Failed to fetch projects', null, [], [], status);
+    sendErrorResponse(res, 'Failed to fetch projects broda', null, [], [], status);
   }
 });
 

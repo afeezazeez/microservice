@@ -24,10 +24,13 @@ export function createHttpClient(baseURL: string): AxiosInstance {
 export function mapUpstreamError(error: unknown, fallbackMessage: string) {
   if (axios.isAxiosError(error) && error.response) {
     const status = error.response.status || 500;
-    const data = error.response.data ?? { success: false, error: fallbackMessage };
+    const data = error.response.data ?? { success: false, error_message: fallbackMessage };
     return { status, data };
   }
-  return { status: 500, data: { success: false, error: fallbackMessage } };
+  if (axios.isAxiosError(error) && error.message) {
+    return { status: 500, data: { success: false, error_message: error.message } };
+  }
+  return { status: 500, data: { success: false, error_message: fallbackMessage } };
 }
 
 export type UpstreamResult<T = any> = AxiosResponse<T>;

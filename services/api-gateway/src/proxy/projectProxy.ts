@@ -1,7 +1,7 @@
 import { AxiosInstance } from 'axios';
 import { createHttpClient, mapUpstreamError, UpstreamResult } from './httpClient';
 
-const PROJECT_SERVICE_URL = process.env.PROJECT_SERVICE_URL || 'http://project-service:3002';
+const PROJECT_SERVICE_URL = process.env.PROJECT_SERVICE_URL || 'http://project-service:3001';
 const projectClient: AxiosInstance = createHttpClient(PROJECT_SERVICE_URL);
 
 export async function listProjects(token: string, correlationId?: string): Promise<UpstreamResult> {
