@@ -37,6 +37,11 @@ export const config: {
         type: 'topic',
         durable: true,
       },
+      {
+        name: 'project.events',
+        type: 'topic',
+        durable: true,
+      },
     ],
     queues: [
       {
@@ -46,6 +51,26 @@ export const config: {
           {
             exchange: 'user.events',
             routingKey: 'user.invited',
+          },
+        ],
+      },
+      {
+        name: 'project.member.added',
+        durable: true,
+        bindings: [
+          {
+            exchange: 'project.events',
+            routingKey: 'project.member.added',
+          },
+        ],
+      },
+      {
+        name: 'project.member.removed',
+        durable: true,
+        bindings: [
+          {
+            exchange: 'project.events',
+            routingKey: 'project.member.removed',
           },
         ],
       },

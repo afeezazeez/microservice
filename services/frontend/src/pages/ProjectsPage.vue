@@ -18,6 +18,11 @@ const canCreateProject = computed(() => {
   return roles.includes('super-admin') || roles.includes('project-manager')
 })
 
+function canDeleteProject(project: Project): boolean {
+  const permissions = authStore.user?.permissions || []
+  return permissions.includes('project:delete')
+}
+
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const showDeleteModal = ref(false)
@@ -237,7 +242,7 @@ onMounted(() => {
                     Edit
                   </button>
                   <button
-                    v-if="project.created_by !== authStore.user?.id"
+                    v-if="canDeleteProject(project)"
                     @click="openDeleteModal(project.id)"
                     class="text-red-400 hover:text-red-300 cursor-pointer"
                   >
@@ -281,7 +286,7 @@ onMounted(() => {
                   </svg>
                 </button>
                 <button
-                  v-if="project.created_by !== authStore.user?.id"
+                  v-if="canDeleteProject(project)"
                   @click="openDeleteModal(project.id)"
                   class="text-red-400 hover:text-red-300 cursor-pointer"
                   aria-label="Delete project"

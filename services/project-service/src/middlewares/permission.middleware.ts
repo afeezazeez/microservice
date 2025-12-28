@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { AuthenticatedRequest } from './auth.middleware';
+import { AuthenticatedRequest } from '../types/auth';
 import { ClientErrorException } from '../exceptions/client.error.exception';
 import { ResponseStatus } from '../enums/http-status-codes';
 

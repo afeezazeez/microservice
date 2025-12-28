@@ -33,8 +33,10 @@ export const projectApi = {
     return data
   },
 
-  async removeMember(projectId: number, userId: number): Promise<ApiResponse<void>> {
-    const { data } = await apiClient.delete(`/projects/${projectId}/members/${userId}`)
+  async removeMember(projectId: number, userId: number, userName?: string, userEmail?: string): Promise<ApiResponse<void>> {
+    const { data } = await apiClient.delete(`/projects/${projectId}/members/${userId}`, {
+      data: { user_name: userName, user_email: userEmail },
+    })
     return data
   },
 }

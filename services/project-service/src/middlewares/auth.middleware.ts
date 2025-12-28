@@ -1,39 +1,11 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import configService from '../utils/config/config.service';
 import { AuthenticationException } from '../exceptions/authentication.exception';
 import { WinstonLogger } from '../utils/logger/winston.logger';
+import { AuthenticatedRequest, AuthenticatedUser, JwtPayload } from '../types/auth';
 
 const Logger = new WinstonLogger('AuthMiddleware');
-
-export interface JwtPayload {
-  id: number;
-  email: string;
-  name: string;
-  company_id: number;
-  company_name?: string | null;
-  roles?: string[];
-  permissions?: string[];
-  type?: string;
-  iat: number;
-  exp: number;
-}
-
-export interface AuthenticatedUser {
-  id: number;
-  email: string;
-  name: string;
-  company_id: number;
-  company_name?: string | null;
-  roles?: string[];
-  permissions?: string[];
-}
-
-export interface AuthenticatedRequest extends Request {
-  user?: AuthenticatedUser;
-  correlationId?: string;
-}
-
 const CORRELATION_HEADER = 'x-correlation-id';
 
 export async function authMiddleware(

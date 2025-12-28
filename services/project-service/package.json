@@ -16,6 +16,7 @@
     "swagger": "echo 'Swagger docs are served at /api/docs when server is running'"
   },
   "dependencies": {
+    "amqplib": "^0.10.9",
     "axios": "^1.7.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
@@ -37,6 +38,7 @@
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
+    "@types/amqplib": "^0.10.8",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/jsonwebtoken": "^9.0.7",

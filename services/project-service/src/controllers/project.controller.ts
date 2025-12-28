@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express';
 import { ProjectService } from '../services/project.service';
 import { sendSuccessResponse } from '../utils/http/response-handlers';
 import { ResponseStatus } from '../enums/http-status-codes';
-import { AuthenticatedRequest } from '../middlewares/auth.middleware';
+import { AuthenticatedRequest } from '../types/auth';
 import { CreateProjectDto } from '../dtos/project/create-project.dto';
 import { UpdateProjectDto } from '../dtos/project/update-project.dto';
 import { AddMemberDto } from '../dtos/project/add-member.dto';
@@ -115,7 +115,7 @@ export class ProjectController {
       const projectId = parseInt(req.params.id);
       const user = req.user!;
 
-      await this.projectService.deleteProject(projectId, user.company_id, user.id, req.correlationId);
+      await this.projectService.deleteProject(projectId, user.company_id, user.id, user.company_name || undefined);
 
             return sendSuccessResponse(res, [], 'Project deleted successfully', ResponseStatus.OK);
     } catch (error) {
@@ -128,13 +128,16 @@ export class ProjectController {
       const projectId = parseInt(req.params.id);
       const dto: AddMemberDto = req.body;
       const user = req.user!;
+      const { user_name, user_email } = req.body;
 
       const member = await this.projectService.addMember(
         projectId,
         dto,
         user.company_id,
         user.id,
-        req.correlationId
+        user.company_name || undefined,
+        user_name,
+        user_email
       );
 
             return sendSuccessResponse(res, ProjectMemberDto.make(member), 'Member added successfully', ResponseStatus.CREATED);
@@ -148,8 +151,17 @@ export class ProjectController {
       const projectId = parseInt(req.params.id);
       const userId = parseInt(req.params.userId);
       const user = req.user!;
+      const { user_name, user_email } = req.body;
 
-      await this.projectService.removeMember(projectId, userId, user.company_id, user.id, req.correlationId);
+      await this.projectService.removeMember(
+        projectId,
+        userId,
+        user.company_id,
+        user.id,
+        user.company_name || undefined,
+        user_name,
+        user_email
+      );
 
             return sendSuccessResponse(res, [], 'Member removed successfully');
     } catch (error) {

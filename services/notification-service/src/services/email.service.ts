@@ -93,5 +93,45 @@ export class EmailService {
     });
   }
 
+  async sendProjectMemberAddedNotification(data: {
+    to: string;
+    userName: string;
+    projectName: string;
+    companyName: string;
+  }): Promise<void> {
+    await this.sendEmail({
+      to: data.to,
+      subject: `You've been added to project "${data.projectName}"`,
+      template: 'project-member-added',
+      data: {
+        title: 'Added to Project',
+        userName: data.userName,
+        projectName: data.projectName,
+        companyName: data.companyName,
+        projectsUrl: `${config.frontendUrl}/projects`,
+      },
+    });
+  }
+
+  async sendProjectMemberRemovedNotification(data: {
+    to: string;
+    userName: string;
+    projectName: string;
+    companyName: string;
+  }): Promise<void> {
+    await this.sendEmail({
+      to: data.to,
+      subject: `You've been removed from project "${data.projectName}"`,
+      template: 'project-member-removed',
+      data: {
+        title: 'Removed from Project',
+        userName: data.userName,
+        projectName: data.projectName,
+        companyName: data.companyName,
+        projectsUrl: `${config.frontendUrl}/projects`,
+      },
+    });
+  }
+
 }
 

@@ -12,16 +12,19 @@ import { PaginationOptions, PaginationMeta } from '../interfaces/pagination.inte
 import { generatePaginationMeta } from '../utils/helper';
 import { WinstonLogger } from '../utils/logger/winston.logger';
 import { FindOptions, Op } from 'sequelize';
+import { RabbitMQService } from './rabbitmq.service';
 
 export class ProjectService {
   private readonly projectRepository: ProjectRepository;
   private readonly projectMemberRepository: ProjectMemberRepository;
     private readonly logger: WinstonLogger;
+    private readonly rabbitMQService: RabbitMQService;
 
     constructor(logger?: WinstonLogger) {
     this.projectRepository = new ProjectRepository();
     this.projectMemberRepository = new ProjectMemberRepository();
         this.logger = logger || new WinstonLogger('ProjectService');
+        this.rabbitMQService = new RabbitMQService(logger);
   }
 
   async createProject(
@@ -171,7 +174,7 @@ export class ProjectService {
     projectId: number,
     companyId: number,
     userId: number,
-    correlationId?: string
+    companyName?: string
   ): Promise<void> {
     const project = await this.projectRepository.findById(projectId);
 
@@ -179,18 +182,16 @@ export class ProjectService {
       throw new ClientErrorException('Project not found', ResponseStatus.NOT_FOUND);
     }
 
-        // Delete all project members first
         const members = await this.projectMemberRepository.findAllWithoutPagination({
             where: { project_id: projectId }
         });
 
-        for (const member of members) {
-            await this.projectMemberRepository.hardDelete(member.id);
-        }
+    for (const member of members) {
+      await this.projectMemberRepository.hardDelete(member.id);
+    }
 
         await this.projectRepository.hardDelete(projectId);
 
-        this.logger.info('Project deleted', { projectId, correlation_id: correlationId });
   }
 
   async addMember(
@@ -198,7 +199,9 @@ export class ProjectService {
     dto: AddMemberDto,
     companyId: number,
     userId: number,
-    correlationId?: string
+    companyName?: string,
+    userName?: string,
+    userEmail?: string
     ): Promise<ProjectMember> {
     const project = await this.projectRepository.findById(projectId);
 
@@ -206,9 +209,9 @@ export class ProjectService {
       throw new ClientErrorException('Project not found', ResponseStatus.NOT_FOUND);
     }
 
-        const existingMember = await this.projectMemberRepository.findOne({
-            where: { project_id: projectId, user_id: dto.user_id }
-        });
+    const existingMember = await this.projectMemberRepository.findOne({
+        where: { project_id: projectId, user_id: dto.user_id }
+    });
 
     if (existingMember) {
       throw new ClientErrorException('User is already a member of this project', ResponseStatus.CONFLICT);
@@ -220,11 +223,21 @@ export class ProjectService {
       joined_at: new Date(),
     });
 
-        this.logger.info('Member added to project', {
-            projectId,
-            userId: dto.user_id,
-            correlation_id: correlationId
-        });
+    if (userName && userEmail) {
+      await this.rabbitMQService.publish('project.events', 'project.member.added', {
+        event: 'project.member.added',
+        data: {
+          project_id: projectId,
+          project_name: project.name,
+          user_id: dto.user_id,
+          user_name: userName,
+          user_email: userEmail,
+          company_id: companyId,
+          company_name: companyName || null,
+          added_at: new Date().toISOString(),
+        },
+      });
+    }
 
         return member;
   }
@@ -234,7 +247,9 @@ export class ProjectService {
     memberUserId: number,
     companyId: number,
     userId: number,
-    correlationId?: string
+    companyName?: string,
+    userName?: string,
+    userEmail?: string
   ): Promise<void> {
     const project = await this.projectRepository.findById(projectId);
 
@@ -257,7 +272,21 @@ export class ProjectService {
 
         await this.projectMemberRepository.hardDelete(member.id);
 
-        this.logger.info('Member removed from project', { projectId, userId, correlation_id: correlationId });
+    if (userName && userEmail) {
+      await this.rabbitMQService.publish('project.events', 'project.member.removed', {
+        event: 'project.member.removed',
+        data: {
+          project_id: projectId,
+          project_name: project.name,
+          user_id: memberUserId,
+          user_name: userName,
+          user_email: userEmail,
+          company_id: companyId,
+          company_name: companyName || null,
+          removed_at: new Date().toISOString(),
+        },
+      });
+    }
   }
 
   private generateSlug(name: string, companyId: number): string {
