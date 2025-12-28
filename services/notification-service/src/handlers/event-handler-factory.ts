@@ -1,11 +1,17 @@
 import { IEventHandler } from '../interfaces/event-handler.interface';
 import { NotificationEvent } from '../types/events';
+import { UserCreatedHandler } from './user-created.handler';
+import { UserUpdatedHandler } from './user-updated.handler';
+import { UserDeletedHandler } from './user-deleted.handler';
 import { UserInvitedHandler } from './user-invited.handler';
 import { ProjectMemberAddedHandler } from './project-member-added.handler';
 import { ProjectMemberRemovedHandler } from './project-member-removed.handler';
 
 export class EventHandlerFactory {
   private static handlers = new Map<string, () => IEventHandler>([
+    ['user.created', () => new UserCreatedHandler()],
+    ['user.updated', () => new UserUpdatedHandler()],
+    ['user.deleted', () => new UserDeletedHandler()],
     ['user.invited', () => new UserInvitedHandler()],
     ['project.member.added', () => new ProjectMemberAddedHandler()],
     ['project.member.removed', () => new ProjectMemberRemovedHandler()],

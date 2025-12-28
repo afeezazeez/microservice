@@ -6,6 +6,9 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "migrate": "npx sequelize-cli db:migrate",
+    "migrate:undo": "npx sequelize-cli db:migrate:undo",
+    "migrate:reset": "npx sequelize-cli db:migrate:undo:all",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -15,7 +18,12 @@
     "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
     "express": "^4.19.2",
+    "mysql2": "^3.11.0",
     "nodemailer": "^6.9.8",
+    "reflect-metadata": "^0.2.2",
+    "sequelize": "^6.37.0",
+    "sequelize-cli": "^6.6.2",
+    "sequelize-typescript": "^2.1.6",
     "uuid": "^11.0.2",
     "winston": "^3.13.0"
   },

@@ -61,9 +61,8 @@ export class ProjectService {
       joined_at: new Date(),
     });
 
-        this.logger.info('Project created', { projectId: project.id, correlation_id: correlationId });
-
-        return project;
+    
+    return project;
   }
 
     async fetchCompanyProjects(
@@ -182,15 +181,28 @@ export class ProjectService {
       throw new ClientErrorException('Project not found', ResponseStatus.NOT_FOUND);
     }
 
-        const members = await this.projectMemberRepository.findAllWithoutPagination({
-            where: { project_id: projectId }
-        });
+    const members = await this.projectMemberRepository.findAllWithoutPagination({
+        where: { project_id: projectId }
+    });
 
     for (const member of members) {
-      await this.projectMemberRepository.hardDelete(member.id);
+   
+      if (project.created_by !== member.user_id) {
+        await this.projectMemberRepository.hardDelete(member.id);
+      }
+
+      // Publish member removed event for each member
+      await this.rabbitMQService.publish('project.events', 'project.member.removed', {
+        event: 'project.member.removed',
+        data: {
+          project_name: project.name,
+          user_id: member.user_id,
+          company_name: companyName || '',
+        },
+      });
     }
 
-        await this.projectRepository.hardDelete(projectId);
+    await this.projectRepository.hardDelete(projectId);
 
   }
 
@@ -199,9 +211,7 @@ export class ProjectService {
     dto: AddMemberDto,
     companyId: number,
     userId: number,
-    companyName?: string,
-    userName?: string,
-    userEmail?: string
+    companyName?: string
     ): Promise<ProjectMember> {
     const project = await this.projectRepository.findById(projectId);
 
@@ -223,23 +233,16 @@ export class ProjectService {
       joined_at: new Date(),
     });
 
-    if (userName && userEmail) {
-      await this.rabbitMQService.publish('project.events', 'project.member.added', {
-        event: 'project.member.added',
-        data: {
-          project_id: projectId,
-          project_name: project.name,
-          user_id: dto.user_id,
-          user_name: userName,
-          user_email: userEmail,
-          company_id: companyId,
-          company_name: companyName || null,
-          added_at: new Date().toISOString(),
-        },
-      });
-    }
+    await this.rabbitMQService.publish('project.events', 'project.member.added', {
+      event: 'project.member.added',
+      data: {
+        project_name: project.name,
+        user_id: dto.user_id,
+        company_name: companyName || '',
+      },
+    });
 
-        return member;
+    return member;
   }
 
   async removeMember(
@@ -247,46 +250,36 @@ export class ProjectService {
     memberUserId: number,
     companyId: number,
     userId: number,
-    companyName?: string,
-    userName?: string,
-    userEmail?: string
+    companyName?: string
   ): Promise<void> {
-    const project = await this.projectRepository.findById(projectId);
+        const project = await this.projectRepository.findById(projectId);
 
-    if (!project || project.company_id !== companyId) {
-      throw new ClientErrorException('Project not found', ResponseStatus.NOT_FOUND);
-    }
+        if (!project || project.company_id !== companyId) {
+          throw new ClientErrorException('Project not found', ResponseStatus.NOT_FOUND);
+        }
 
         const member = await this.projectMemberRepository.findOne({
             where: { project_id: projectId, user_id: memberUserId }
         });
 
-    if (!member) {
-      throw new ClientErrorException('Member not found in project', ResponseStatus.NOT_FOUND);
-    }
+        if (!member) {
+          throw new ClientErrorException('Member not found in project', ResponseStatus.NOT_FOUND);
+        }
 
-        // Cannot remove project creator
         if (project.created_by === memberUserId) {
-            throw new ClientErrorException('Cannot remove the project creator', ResponseStatus.BAD_REQUEST);
-    }
+          throw new ClientErrorException('Cannot remove the project creator', ResponseStatus.BAD_REQUEST);
+        }
 
         await this.projectMemberRepository.hardDelete(member.id);
 
-    if (userName && userEmail) {
-      await this.rabbitMQService.publish('project.events', 'project.member.removed', {
-        event: 'project.member.removed',
-        data: {
-          project_id: projectId,
-          project_name: project.name,
-          user_id: memberUserId,
-          user_name: userName,
-          user_email: userEmail,
-          company_id: companyId,
-          company_name: companyName || null,
-          removed_at: new Date().toISOString(),
-        },
-      });
-    }
+        await this.rabbitMQService.publish('project.events', 'project.member.removed', {
+          event: 'project.member.removed',
+          data: {
+            project_name: project.name,
+            user_id: memberUserId,
+            company_name: companyName || '',
+          },
+        });
   }
 
   private generateSlug(name: string, companyId: number): string {

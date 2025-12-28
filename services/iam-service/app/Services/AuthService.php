@@ -7,6 +7,7 @@ use App\Repositories\CompanyRepository;
 use App\Repositories\UserRepository;
 use App\Services\JWTService;
 use App\Services\RoleService;
+use App\Services\RabbitMQService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -17,17 +18,20 @@ class AuthService
     private CompanyRepository $companyRepository;
     private RoleService $roleService;
     private JWTService $jwtService;
+    private RabbitMQService $rabbitMQService;
 
     public function __construct(
         UserRepository $userRepository,
         CompanyRepository $companyRepository,
         RoleService $roleService,
-        JWTService $jwtService
+        JWTService $jwtService,
+        RabbitMQService $rabbitMQService
     ) {
         $this->userRepository = $userRepository;
         $this->companyRepository = $companyRepository;
         $this->roleService = $roleService;
         $this->jwtService = $jwtService;
+        $this->rabbitMQService = $rabbitMQService;
     }
 
     public function registerCompany(array $companyData, array $userData): array
@@ -50,6 +54,27 @@ class AuthService
         ]);
 
         $this->roleService->assignRole($user->id, 'super-admin', $company->id);
+
+        try {
+            $this->rabbitMQService->publish(
+                config('rabbitmq.exchanges.user_events'),
+                'user.created',
+                [
+                    'event' => 'user.created',
+                    'data' => [
+                        'id' => $user->id,
+                        'company_id' => $user->company_id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                    ],
+                ]
+            );
+        } catch (\Exception $e) {
+            Log::error('Failed to publish user.created event to RabbitMQ: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+            ]);
+        }
 
         $accessToken = $this->jwtService->generateAccessToken($user);
         $refreshToken = $this->jwtService->generateRefreshToken($user);
@@ -133,6 +158,28 @@ class AuthService
                 $userData['resource_type'] ?? null,
                 $userData['resource_id'] ?? null
             );
+        }
+
+        // Publish user.created event
+        try {
+            $this->rabbitMQService->publish(
+                config('rabbitmq.exchanges.user_events'),
+                'user.created',
+                [
+                    'event' => 'user.created',
+                    'data' => [
+                        'id' => $user->id,
+                        'company_id' => $user->company_id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                    ],
+                ]
+            );
+        } catch (\Exception $e) {
+            Log::error('Failed to publish user.created event to RabbitMQ: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+            ]);
         }
 
         $accessToken = $this->jwtService->generateAccessToken($user);

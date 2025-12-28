@@ -128,16 +128,13 @@ export class ProjectController {
       const projectId = parseInt(req.params.id);
       const dto: AddMemberDto = req.body;
       const user = req.user!;
-      const { user_name, user_email } = req.body;
 
       const member = await this.projectService.addMember(
         projectId,
         dto,
         user.company_id,
         user.id,
-        user.company_name || undefined,
-        user_name,
-        user_email
+        user.company_name || undefined
       );
 
             return sendSuccessResponse(res, ProjectMemberDto.make(member), 'Member added successfully', ResponseStatus.CREATED);
@@ -151,16 +148,13 @@ export class ProjectController {
       const projectId = parseInt(req.params.id);
       const userId = parseInt(req.params.userId);
       const user = req.user!;
-      const { user_name, user_email } = req.body;
 
       await this.projectService.removeMember(
         projectId,
         userId,
         user.company_id,
         user.id,
-        user.company_name || undefined,
-        user_name,
-        user_email
+        user.company_name || undefined
       );
 
             return sendSuccessResponse(res, [], 'Member removed successfully');

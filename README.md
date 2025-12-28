@@ -149,7 +149,7 @@ mkcert -key-file infra/traefik/certs/local-key.pem -cert-file infra/traefik/cert
   api-gateway.afeez-dev.local \
   grafana.afeez-dev.local
 ```
-3) Start the stack (`make setup` or `make up`). Traefik serves HTTPS using those certs.
+3) Start the stack (`make start-all`). Traefik serves HTTPS using those certs.
 
 ### Access URLs (once running)
 - **Frontend App**: https://app.afeez-dev.local (proxy) or http://localhost:5173 (direct)
@@ -196,12 +196,13 @@ cd microservices
 
 2. Run setup (starts all services, runs migrations, seeds data, generates docs)
 ```bash
-make setup
+make start-all
 ```
 
 This will:
+- Build all Docker images
 - Start all Docker containers
-- Run IAM Service migrations
+- Run migrations for all services
 - Seed IAM Service data
 - Generate Swagger documentation
 - Display all service URLs and documentation links
@@ -209,19 +210,26 @@ This will:
 ### Available Make Commands
 
 ```bash
-make help          # Show all available commands
-make setup         # Complete setup (up + migrations + seed + docs + status)
-make up            # Start all Docker containers
-make down          # Stop all Docker containers
-make restart       # Restart all services
-make status        # Display all service URLs and docs
-make logs          # Show logs from all services
-make clean         # Stop and remove all containers/volumes
-make iam-setup     # Setup IAM service (migrate + seed + swagger)
-make iam-migrate   # Run IAM migrations only
-make iam-seed      # Run IAM seeders only
-make iam-swagger   # Generate IAM Swagger docs only
-make iam-test      # Run IAM service tests
+make help                      # Show all available commands
+make start-all                 # Setup and start all services (build, migrate, seed)
+make stop-all                  # Stop all services
+make start [service]           # Start a specific service
+make stop [service]            # Stop a specific service
+make restart [service]        # Rebuild and restart a service
+make logs [service]           # Show logs (all or specific service)
+make status                    # Show service status and URLs
+make clean                     # Remove all containers/volumes
+make migrate [service]        # Run migrations for a service
+make test [service]           # Run tests for a service
+```
+
+### Examples
+
+```bash
+make start api-gateway              # Start only api-gateway
+make restart project-service        # Rebuild and restart project-service
+make migrate notification-service    # Run notification service migrations
+make logs iam-service              # Show logs for iam-service
 ```
 
 ### Manual Setup (without Make)

@@ -1,6 +1,7 @@
 import express from 'express';
 import { logger } from './utils/logger';
 import { RabbitMQService } from './services/rabbitmq.service';
+import { initializeDatabase } from './config/database.config';
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.get('/health', (_req, res) => {
 
 export async function initializeServices(): Promise<void> {
   try {
+    await initializeDatabase();
     rabbitmqService = new RabbitMQService();
     await rabbitmqService.connect();
 

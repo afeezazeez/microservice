@@ -45,6 +45,36 @@ export const config: {
     ],
     queues: [
       {
+        name: 'user.created',
+        durable: true,
+        bindings: [
+          {
+            exchange: 'user.events',
+            routingKey: 'user.created',
+          },
+        ],
+      },
+      {
+        name: 'user.updated',
+        durable: true,
+        bindings: [
+          {
+            exchange: 'user.events',
+            routingKey: 'user.updated',
+          },
+        ],
+      },
+      {
+        name: 'user.deleted',
+        durable: true,
+        bindings: [
+          {
+            exchange: 'user.events',
+            routingKey: 'user.deleted',
+          },
+        ],
+      },
+      {
         name: 'user.invited',
         durable: true,
         bindings: [

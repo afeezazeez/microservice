@@ -1,8 +1,5 @@
-.PHONY: help setup build up down restart logs clean \
-	iam-setup iam-up iam-migrate iam-seed iam-swagger iam-test \
-	project-setup project-up project-migrate project-swagger \
-	task-setup notification-setup notification-up file-setup analytics-setup api-gateway-setup frontend-setup \
-	status
+.PHONY: help start-all stop-all start stop restart logs status clean build \
+	migrate test setup-service
 
 # Colors
 GREEN := \033[0;32m
@@ -11,123 +8,171 @@ YELLOW := \033[1;33m
 RED := \033[0;31m
 NC := \033[0m
 
-help: ## Show this help message
-	@echo "$(BLUE)Microservices Makefile Commands:$(NC)"
+# Service mappings
+SERVICES := iam-service project-service notification-service api-gateway frontend task-service file-service analytics-service
+INFRA := traefik mysql redis rabbitmq minio loki promtail grafana
+
+help: ## Show help message
+	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
+	@echo "$(GREEN)Microservices Makefile - Simple Commands$(NC)"
+	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
 	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(YELLOW)%-15s$(NC) %s\n", $$1, $$2}'
+	@echo "$(YELLOW)Main Commands:$(NC)"
+	@echo "  $(GREEN)make start-all$(NC)                    Setup and start all services"
+	@echo "  $(GREEN)make stop-all$(NC)                     Stop all services"
+	@echo "  $(GREEN)make start [service]$(NC)              Start a service (or all)"
+	@echo "  $(GREEN)make stop [service]$(NC)               Stop a specific service"
+	@echo "  $(GREEN)make restart [service]$(NC)            Rebuild and restart a service"
+	@echo "  $(GREEN)make logs [service]$(NC)               Show logs"
+	@echo "  $(GREEN)make status$(NC)                       Show service status and URLs"
+	@echo "  $(GREEN)make clean$(NC)                        Remove all containers/volumes"
+	@echo ""
+	@echo "$(YELLOW)Examples:$(NC)"
+	@echo "  $(GREEN)make start api-gateway$(NC)            Start only api-gateway"
+	@echo "  $(GREEN)make restart project-service$(NC)       Rebuild and restart project-service"
+	@echo "  $(GREEN)make migrate notification-service$(NC) Run notification migrations"
+	@echo ""
+	@echo "$(YELLOW)Service Commands:$(NC)"
+	@echo "  $(GREEN)make migrate [service]$(NC)             Run migrations"
+	@echo "  $(GREEN)make test [service]$(NC)                Run tests"
+	@echo ""
+	@echo "$(YELLOW)Available Services:$(NC)"
+	@echo "  • iam-service"
+	@echo "  • project-service"
+	@echo "  • notification-service"
+	@echo "  • api-gateway"
+	@echo "  • frontend"
+	@echo ""
+	@echo "$(BLUE)━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━$(NC)"
 
-setup: build up iam-setup project-setup task-setup notification-setup file-setup analytics-setup api-gateway-setup frontend-setup status ## Full setup: build images, start services, migrate, seed, docs
-
-build: ## Build all images
-	@echo "$(BLUE)🔨 Building images...$(NC)"
-	@docker-compose build
-
-up: ## Start all Docker containers (infra + services)
-	@echo "$(BLUE)📦 Starting Docker containers...$(NC)"
-	@docker-compose up -d --build traefik mysql redis rabbitmq minio loki promtail grafana iam-service iam-nginx api-gateway frontend project-service notification-service || echo "$(YELLOW)⚠️  Some services may not be available yet$(NC)"
+# Full setup - builds, starts, migrates, seeds everything
+start-all: build ## Setup and start all services
+	@echo "$(BLUE)🚀 Starting all services...$(NC)"
+	@docker-compose up -d --build $(INFRA) || true
+	@sleep 5
+	@docker-compose up -d --build $(SERVICES) || true
 	@echo "$(BLUE)⏳ Waiting for services to be healthy...$(NC)"
 	@sleep 10
+	@echo "$(BLUE)🗄️  Running migrations...$(NC)"
+	@$(MAKE) migrate iam-service || true
+	@$(MAKE) migrate project-service || true
+	@$(MAKE) migrate notification-service || true
+	@echo "$(BLUE)🌱 Seeding IAM service...$(NC)"
+	@docker-compose exec -T iam-service php artisan db:seed --force || true
+	@echo "$(BLUE)📚 Generating Swagger docs...$(NC)"
+	@docker-compose exec -T iam-service php artisan l5-swagger:generate || true
+	@$(MAKE) status
 
-down: ## Stop all Docker containers
-	@echo "$(BLUE)🛑 Stopping Docker containers...$(NC)"
-	docker-compose down
+# Stop all services
+stop-all: ## Stop all services
+	@echo "$(BLUE)🛑 Stopping all services...$(NC)"
+	@docker-compose down
 
-restart: down up ## Restart all services
-
-restart-container: ## Restart a container (optional SERVICE=iam-service). If SERVICE is empty, restarts all.
-	@if [ -z "$(SERVICE)" ]; then \
-		echo "$(BLUE)🔄 Restarting all containers...$(NC)"; \
-		docker-compose restart; \
+# Start a specific service or all
+start: ## Start a service (usage: make start [service-name])
+	@SERVICE_NAME="$(filter-out $@,$(MAKECMDGOALS))"; \
+	if [ -z "$$SERVICE_NAME" ]; then \
+		echo "$(BLUE)📦 Starting all services...$(NC)"; \
+		docker-compose up -d --build $(INFRA) $(SERVICES) || true; \
+		$(MAKE) status; \
 	else \
-		echo "$(BLUE)🔄 Restarting container '$(SERVICE)'...$(NC)"; \
-		docker-compose restart $(SERVICE); \
+		echo "$(BLUE)🚀 Starting $$SERVICE_NAME...$(NC)"; \
+		docker-compose up -d --build $$SERVICE_NAME || true; \
+		sleep 3; \
+		$(MAKE) status; \
 	fi
 
-logs: ## Show logs from all services
-	docker-compose logs -f
+# Stop a specific service
+stop: ## Stop a service (usage: make stop [service-name])
+	@SERVICE_NAME="$(filter-out $@,$(MAKECMDGOALS))"; \
+	if [ -z "$$SERVICE_NAME" ]; then \
+		echo "$(YELLOW)⚠️  Please specify a service: make stop api-gateway$(NC)"; \
+		echo "$(YELLOW)   Or use 'make stop-all' to stop all services$(NC)"; \
+		exit 1; \
+	else \
+		echo "$(BLUE)🛑 Stopping $$SERVICE_NAME...$(NC)"; \
+		docker-compose stop $$SERVICE_NAME; \
+	fi
 
+# Restart a specific service or all (with rebuild)
+restart: ## Restart a service (usage: make restart [service-name])
+	@SERVICE_NAME="$(filter-out $@,$(MAKECMDGOALS))"; \
+	if [ -z "$$SERVICE_NAME" ]; then \
+		echo "$(BLUE)🔄 Restarting all services...$(NC)"; \
+		docker-compose restart; \
+	else \
+		echo "$(BLUE)🔄 Rebuilding and restarting $$SERVICE_NAME...$(NC)"; \
+		docker-compose up -d --build $$SERVICE_NAME || true; \
+		sleep 3; \
+		$(MAKE) status; \
+	fi
+
+# Show logs
+logs: ## Show logs (usage: make logs [service-name])
+	@SERVICE_NAME="$(filter-out $@,$(MAKECMDGOALS))"; \
+	if [ -z "$$SERVICE_NAME" ]; then \
+		docker-compose logs -f; \
+	else \
+		docker-compose logs -f $$SERVICE_NAME; \
+	fi
+
+# Run migrations for a service
+migrate: ## Run migrations (usage: make migrate [service-name])
+	@SERVICE_NAME="$(filter-out $@,$(MAKECMDGOALS))"; \
+	if [ -z "$$SERVICE_NAME" ]; then \
+		echo "$(RED)❌ Please specify a service: make migrate project-service$(NC)"; \
+		exit 1; \
+	fi
+	@case "$$SERVICE_NAME" in \
+		iam-service) \
+			echo "$(BLUE)🗄️  Running IAM migrations...$(NC)"; \
+			docker-compose exec -T iam-service php artisan migrate --force || true; \
+			;; \
+		project-service) \
+			echo "$(BLUE)🗄️  Running Project migrations...$(NC)"; \
+			docker-compose exec -T project-service npx sequelize-cli db:migrate || true; \
+			;; \
+		notification-service) \
+			echo "$(BLUE)🗄️  Running Notification migrations...$(NC)"; \
+			docker-compose exec -T notification-service npx sequelize-cli db:migrate || true; \
+			;; \
+		*) \
+			echo "$(YELLOW)⚠️  Migrations not configured for $$SERVICE_NAME$(NC)"; \
+			;; \
+	esac
+
+# Run tests for a service
+test: ## Run tests (usage: make test [service-name])
+	@SERVICE_NAME="$(filter-out $@,$(MAKECMDGOALS))"; \
+	if [ -z "$$SERVICE_NAME" ]; then \
+		echo "$(RED)❌ Please specify a service: make test iam-service$(NC)"; \
+		exit 1; \
+	fi; \
+	case "$$SERVICE_NAME" in \
+		iam-service) \
+			echo "$(BLUE)🧪 Running IAM tests...$(NC)"; \
+			docker-compose exec -T iam-service composer test || true; \
+			;; \
+		*) \
+			echo "$(YELLOW)⚠️  Tests not configured for $$SERVICE_NAME$(NC)"; \
+			;; \
+	esac
+
+# Prevent Make from treating service names as targets
+%:
+	@:
+
+# Build all images
+build: ## Build all Docker images
+	@echo "$(BLUE)🔨 Building all images...$(NC)"
+	@docker-compose build
+
+# Clean everything
 clean: ## Stop and remove all containers, volumes, and networks
-	@echo "$(RED)🧹 Cleaning up...$(NC)"
-	docker-compose down -v --remove-orphans
+	@echo "$(RED)🧹 Cleaning up everything...$(NC)"
+	@docker-compose down -v --remove-orphans
 
-iam-setup: iam-up iam-migrate iam-seed iam-swagger ## Setup IAM service (start, migrate, seed, swagger)
-
-iam-up: ## Start IAM service and its deps
-	@echo "$(BLUE)🚀 Starting IAM service and dependencies...$(NC)"
-	@docker-compose up -d --build traefik mysql redis rabbitmq minio loki promtail grafana iam-service iam-nginx api-gateway frontend || echo "$(YELLOW)⚠️  IAM may not be available yet$(NC)"
-	@echo "$(BLUE)⏳ Waiting for IAM stack to be healthy...$(NC)"
-	@sleep 8
-
-iam-migrate: ## Run IAM service migrations
-	@echo "$(BLUE)🗄️  Running IAM Service migrations...$(NC)"
-	@docker-compose exec -T iam-service php artisan migrate --force || echo "$(YELLOW)⚠️  Migrations may need manual run$(NC)"
-
-iam-seed: ## Run IAM service seeders
-	@echo "$(BLUE)🌱 Seeding IAM Service data...$(NC)"
-	@docker-compose exec -T iam-service php artisan db:seed --force || echo "$(YELLOW)⚠️  Seeders may need manual run$(NC)"
-
-iam-swagger: ## Generate Swagger documentation for IAM service
-	@echo "$(BLUE)📚 Generating Swagger documentation...$(NC)"
-	@docker-compose exec -T iam-service php artisan l5-swagger:generate || echo "$(YELLOW)⚠️  Swagger generation may need manual run$(NC)"
-
-iam-test: ## Run IAM service tests (composer test) with test override
-	@echo "$(BLUE)🧪 Running IAM service tests...$(NC)"
-	@docker-compose exec -T \
-		-e APP_ENV=testing \
-		-e DB_CONNECTION=sqlite \
-		-e DB_DATABASE=:memory: \
-		-e CACHE_STORE=array \
-		-e QUEUE_CONNECTION=sync \
-		-e SESSION_DRIVER=array \
-		-e MAIL_MAILER=array \
-		-e LOG_CHANNEL=null \
-		-e LOG_STACK=null \
-		-e LOG_LEVEL=emergency \
-		-e LOG_DEPRECATIONS_CHANNEL=null \
-		-e LOG_DEPRECATIONS_TRACE=false \
-		iam-service sh -c "rm -f bootstrap/cache/config.php && php artisan config:clear && composer test" || echo "$(YELLOW)⚠️  Tests failed$(NC)"
-
-project-setup: project-up project-migrate ## Setup Project service (start, migrate)
-
-project-up: ## Start Project service
-	@echo "$(BLUE)🚀 Starting Project service...$(NC)"
-	@docker-compose up -d --build project-service || echo "$(YELLOW)⚠️  Project service may not be available yet$(NC)"
-	@echo "$(BLUE)⏳ Waiting for Project service to be healthy...$(NC)"
-	@sleep 5
-
-project-migrate: ## Run Project service migrations
-	@echo "$(BLUE)🗄️  Running Project Service migrations...$(NC)"
-	@docker-compose exec -T project-service npx sequelize-cli db:migrate || echo "$(YELLOW)⚠️  Migrations may need manual run$(NC)"
-
-project-swagger: ## Generate Swagger docs for Project service
-	@echo "$(BLUE)📚 Generating Project service Swagger documentation...$(NC)"
-	@docker-compose exec -T project-service npm run swagger || echo "$(YELLOW)⚠️  Swagger generation may need manual run$(NC)"
-
-task-setup:
-	@echo "$(YELLOW)⚠️  Task service setup is not implemented yet (skipping).$(NC)"
-
-notification-setup: notification-up ## Setup Notification service (start)
-
-notification-up: ## Start Notification service
-	@echo "$(BLUE)🚀 Starting Notification service...$(NC)"
-	@docker-compose up -d --build notification-service || echo "$(YELLOW)⚠️  Notification service may not be available yet$(NC)"
-	@echo "$(BLUE)⏳ Waiting for Notification service to be healthy...$(NC)"
-	@sleep 5
-
-file-setup:
-	@echo "$(YELLOW)⚠️  File service setup is not implemented yet (skipping).$(NC)"
-
-analytics-setup:
-	@echo "$(YELLOW)⚠️  Analytics service setup is not implemented yet (skipping).$(NC)"
-
-api-gateway-setup:
-	@echo "$(BLUE)📦 Installing API Gateway deps...$(NC)"
-	@cd services/api-gateway && npm install
-
-frontend-setup:
-	@echo "$(BLUE)📦 Installing Frontend deps...$(NC)"
-	@cd services/frontend && npm install
-
+# Status - keep the original status output
 status: ## Display all service URLs and documentation links
 	@echo ""
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -204,4 +249,3 @@ status: ## Display all service URLs and documentation links
 	@echo ""
 	@echo "$(GREEN)🎉 All services are ready!$(NC)"
 	@echo ""
-

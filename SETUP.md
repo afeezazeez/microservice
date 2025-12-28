@@ -46,7 +46,7 @@ mkcert -key-file infra/traefik/certs/local-key.pem -cert-file infra/traefik/cert
   api-gateway.afeez-dev.local \
   grafana.afeez-dev.local
 ```
-3) Start the stack (`make setup` or `make up`). Traefik serves HTTPS using those certs.
+3) Start the stack (`make start-all`). Traefik serves HTTPS using those certs.
 
 ### Access URLs (once running)
 - **Frontend App**: https://app.afeez-dev.local (proxy) or http://localhost:5173 (direct)
@@ -223,17 +223,60 @@ RATE_LIMIT_WINDOW_MS=60000
 
 ## Starting Services
 
+### Using Make (Recommended)
+
+```bash
+# 1. Create .env files (see above)
+# 2. Start all services (builds, migrates, seeds)
+make start-all
+
+# 3. Start a specific service
+make start api-gateway
+make start project-service
+
+# 4. Restart a service (with rebuild)
+make restart project-service
+
+# 5. Check logs
+make logs                    # All services
+make logs iam-service       # Specific service
+
+# 6. Run migrations
+make migrate iam-service
+make migrate project-service
+make migrate notification-service
+
+# 7. Stop services
+make stop-all               # Stop all services
+make stop api-gateway       # Stop specific service
+
+# 8. Show service status
+make status
+
+# 9. Clean everything
+make clean
+```
+
+### Manual Setup (without Make)
+
 ```bash
 # 1. Create .env files (see above)
 # 2. Start all services
 docker-compose up -d
 
-# 3. Check logs
+# 3. Run migrations
+docker-compose exec iam-service php artisan migrate --force
+docker-compose exec iam-service php artisan db:seed --force
+docker-compose exec project-service npx sequelize-cli db:migrate
+docker-compose exec notification-service npx sequelize-cli db:migrate
+
+# 4. Check logs
 docker-compose logs -f [service-name]
 
-# 4. Stop all services
+# 5. Stop all services
 docker-compose down
 ```
+
 # Setup Guide
 
 ## Environment Variables Setup
@@ -387,19 +430,4 @@ RATE_LIMIT_WINDOW_MS=60000
 2. **Database Names**: Each service has its own database (database-per-service pattern)
 3. **Service URLs**: Use container names (e.g., `iam-service:8000`) not `localhost`
 4. **RabbitMQ**: All services use the same RabbitMQ instance but different queues
-
-## Starting Services
-
-```bash
-# 1. Create .env files (see above)
-# 2. Start all services
-docker-compose up -d
-
-# 3. Check logs
-docker-compose logs -f [service-name]
-
-# 4. Stop all services
-docker-compose down
-```
-
 

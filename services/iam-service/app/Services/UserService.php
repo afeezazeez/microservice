@@ -117,6 +117,29 @@ class UserService
 
         $this->userRepository->update($userId, $updateData);
 
+        $updatedUser = $this->userRepository->findById($userId);
+
+        // Publish user.updated event
+        try {
+            $this->rabbitMQService->publish(
+                config('rabbitmq.exchanges.user_events'),
+                'user.updated',
+                [
+                    'event' => 'user.updated',
+                    'data' => [
+                        'id' => $updatedUser->id,
+                        'company_id' => $updatedUser->company_id,
+                        'name' => $updatedUser->name,
+                        'email' => $updatedUser->email,
+                    ],
+                ]
+            );
+        } catch (\Exception $e) {
+            Log::error('Failed to publish user.updated event to RabbitMQ: ' . $e->getMessage(), [
+                'user_id' => $userId,
+            ]);
+        }
+
         return $this->getUserById($userId, $companyId);
     }
 
@@ -135,7 +158,27 @@ class UserService
             throw new ClientErrorException('User not found');
         }
 
+        $userIdToDelete = $user->id;
+
         $this->userRepository->delete($userId);
+
+        // Publish user.deleted event
+        try {
+            $this->rabbitMQService->publish(
+                config('rabbitmq.exchanges.user_events'),
+                'user.deleted',
+                [
+                    'event' => 'user.deleted',
+                    'data' => [
+                        'id' => $userIdToDelete,
+                    ],
+                ]
+            );
+        } catch (\Exception $e) {
+            Log::error('Failed to publish user.deleted event to RabbitMQ: ' . $e->getMessage(), [
+                'user_id' => $userIdToDelete,
+            ]);
+        }
     }
 
     public function inviteUser(int $companyId, array $data): array
@@ -179,6 +222,29 @@ class UserService
             }
         }
 
+        // Publish user.created event (invited user is also created)
+        try {
+            $this->rabbitMQService->publish(
+                config('rabbitmq.exchanges.user_events'),
+                'user.created',
+                [
+                    'event' => 'user.created',
+                    'data' => [
+                        'id' => $user->id,
+                        'company_id' => $user->company_id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                    ],
+                ]
+            );
+        } catch (\Exception $e) {
+            Log::error('Failed to publish user.created event to RabbitMQ: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+            ]);
+        }
+
+        // Also publish user.invited event for notification purposes
         try {
             $this->rabbitMQService->publish(
                 config('rabbitmq.exchanges.user_events'),
@@ -187,13 +253,8 @@ class UserService
                     'event' => 'user.invited',
                     'data' => [
                         'user_id' => $user->id,
-                        'user_name' => $user->name,
-                        'user_email' => $user->email,
-                        'company_id' => $company->id,
                         'company_name' => $company->name,
-                        'role_slug' => $roleSlug ?? '',
                         'role_name' => $roleName ?? '',
-                        'invited_at' => now()->toISOString(),
                     ],
                 ]
             );
