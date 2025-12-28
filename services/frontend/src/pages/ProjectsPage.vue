@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import Layout from '@/components/Layout.vue'
 import Modal from '@/components/Modal.vue'
 import ConfirmModal from '@/components/ConfirmModal.vue'
@@ -12,6 +12,11 @@ import type { CreateProjectPayload, UpdateProjectPayload, AddMemberPayload } fro
 const projectsStore = useProjectsStore()
 const usersStore = useUsersStore()
 const authStore = useAuthStore()
+
+const canCreateProject = computed(() => {
+  const roles = authStore.user?.roles || []
+  return roles.includes('super-admin') || roles.includes('project-manager')
+})
 
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
@@ -33,7 +38,7 @@ const createForm = ref({
 const editForm = ref({
   name: '',
   description: '',
-  status: 'active' as 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled',
+  status: 'active' as 'active' | 'archived' | 'completed',
   start_date: '',
   end_date: '',
 })
@@ -143,11 +148,9 @@ async function handleRemoveMember() {
 
 function getStatusColor(status: string) {
   const colors: Record<string, string> = {
-    planning: 'bg-yellow-500/20 text-yellow-400',
     active: 'bg-green-500/20 text-green-400',
-    on_hold: 'bg-orange-500/20 text-orange-400',
+    archived: 'bg-zinc-500/20 text-zinc-400',
     completed: 'bg-blue-500/20 text-blue-400',
-    cancelled: 'bg-red-500/20 text-red-400',
   }
   return colors[status] || 'bg-zinc-500/20 text-zinc-400'
 }
@@ -173,6 +176,7 @@ onMounted(() => {
           <p class="text-zinc-400 mt-1 text-sm lg:text-base">Manage your projects</p>
         </div>
         <button
+          v-if="canCreateProject"
           @click="openCreateModal"
           class="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors cursor-pointer"
         >
@@ -389,11 +393,9 @@ onMounted(() => {
               v-model="editForm.status"
               class="w-full px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
             >
-              <option value="planning">Planning</option>
               <option value="active">Active</option>
-              <option value="on_hold">On Hold</option>
+              <option value="archived">Archived</option>
               <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
             </select>
           </div>
           <div class="grid grid-cols-2 gap-4">
@@ -514,7 +516,11 @@ onMounted(() => {
             >
               <option :value="0">Select a user</option>
               <option
-                v-for="user in usersStore.users.filter(u => !projectsStore.currentProject?.members?.some(m => m.user_id === u.id))"
+                v-for="user in usersStore.users.filter(u => {
+                  const isAlreadyMember = projectsStore.currentProject?.members?.some(m => m.user_id === u.id)
+                  const isSuperAdminOrProjectManager = u.roles?.includes('super-admin') || u.roles?.includes('project-manager')
+                  return !isAlreadyMember && !isSuperAdminOrProjectManager
+                })"
                 :key="user.id"
                 :value="user.id"
               >

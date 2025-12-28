@@ -10,7 +10,7 @@ export interface Project {
   name: string
   slug: string
   description: string | null
-  status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
+  status: 'active' | 'archived' | 'completed'
   created_by: number
   start_date: string | null
   end_date: string | null
@@ -29,7 +29,7 @@ export interface CreateProjectPayload {
 export interface UpdateProjectPayload {
   name?: string
   description?: string
-  status?: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled'
+  status?: 'active' | 'archived' | 'completed'
   start_date?: string
   end_date?: string
 }

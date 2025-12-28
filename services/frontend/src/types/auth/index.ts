@@ -5,6 +5,7 @@ export interface User {
   company_id: number
   company_name: string | null
   roles: string[]
+  permissions?: string[]
 }
 
 export interface Company {

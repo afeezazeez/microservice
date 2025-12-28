@@ -105,6 +105,7 @@ onMounted(() => {
           <p class="text-zinc-400 mt-1 text-sm lg:text-base">Manage users in your company</p>
         </div>
         <button
+          v-if="isSuperAdmin"
           @click="showInviteModal = true"
           class="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors cursor-pointer"
         >
