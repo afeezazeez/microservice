@@ -64,7 +64,8 @@ export class ProjectController {
                 user.company_id,
                 user.id,
                 findOptions,
-                paginationOptions
+                paginationOptions,
+                user.roles
             );
 
             return sendSuccessResponse(res, {

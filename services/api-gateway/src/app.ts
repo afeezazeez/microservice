@@ -6,6 +6,7 @@ import { requestLoggerMiddleware } from './middleware/requestLogger';
 import { authRouter } from './routes/auth';
 import { usersRouter } from './routes/users';
 import { rolesRouter } from './routes/roles';
+import { projectsRouter } from './routes/projects';
 
 const app = express();
 const publicDir = path.join(__dirname, '../public');
@@ -21,6 +22,7 @@ app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/roles', rolesRouter);
+app.use('/api/projects', projectsRouter);
 
 export { app };
 

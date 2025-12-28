@@ -67,12 +67,30 @@ export class ProjectService {
     companyId: number,
     userId: number,
         findOptions: FindOptions,
-        paginationOptions: PaginationOptions
+        paginationOptions: PaginationOptions,
+        userRoles?: string[]
     ): Promise<{ data: Project[]; meta: PaginationMeta }> {
-        findOptions.where = {
-            ...findOptions.where as object,
-            company_id: companyId
-        };
+        const isSuperAdminOrProjectManager = userRoles?.some(role => role === 'super-admin' || role === 'project-manager');
+
+        if (isSuperAdminOrProjectManager) {
+            findOptions.where = {
+                ...findOptions.where as object,
+                company_id: companyId
+            };
+        } else {
+            const userProjects = await this.projectMemberRepository.findAllWithoutPagination({
+                where: { user_id: userId },
+                attributes: ['project_id']
+            });
+
+            const projectIds = userProjects.map(pm => pm.project_id);
+
+            findOptions.where = {
+                ...findOptions.where as object,
+                company_id: companyId,
+                id: { [Op.in]: projectIds.length > 0 ? projectIds : [0] }
+            };
+        }
 
         const { page = 1, limit = 25 } = paginationOptions;
 
