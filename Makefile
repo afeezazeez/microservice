@@ -126,6 +126,10 @@ migrate: ## Run migrations (usage: make migrate [service-name])
 			echo "$(BLUE)🗄️  Running Notification migrations...$(NC)"; \
 			docker-compose exec -T notification-service npm run migrate || true; \
 			;; \
+		task-service) \
+			echo "$(BLUE)🗄️  Running Task migrations...$(NC)"; \
+			docker-compose exec -T task-service npm run migrate || true; \
+			;; \
 		*) \
 			echo "$(YELLOW)⚠️  Migrations not configured for $$SERVICE_NAME$(NC)"; \
 			;; \
@@ -187,7 +191,7 @@ status: ## Display all service URLs and documentation links
 	fi
 	@if docker-compose ps | grep -q "task-service.*Up"; then \
 		echo "$(YELLOW)✓ Task Service (Node.js)$(NC)"; \
-		echo "    🌐 API:  https://task-service.afeez-dev.local"; \
+		echo "    🌐 API:  https://task-service.afeez-dev.local/api"; \
 		echo "    📚 Docs: https://task-service.afeez-dev.local/api/docs"; \
 		echo ""; \
 	fi

@@ -1,0 +1,707 @@
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import Layout from '@/components/Layout.vue'
+import Modal from '@/components/Modal.vue'
+import ConfirmModal from '@/components/ConfirmModal.vue'
+import { useProjectsStore } from '@/stores/projects'
+import { useTasksStore } from '@/stores/tasks'
+import { useUsersStore } from '@/stores/users'
+import { useAuthStore } from '@/stores/auth'
+import type { Task } from '@/types/tasks'
+import type { CreateTaskPayload, UpdateTaskPayload } from '@/types/tasks'
+import type { AddMemberPayload } from '@/types/projects'
+
+const route = useRoute()
+const router = useRouter()
+const projectsStore = useProjectsStore()
+const tasksStore = useTasksStore()
+const usersStore = useUsersStore()
+const authStore = useAuthStore()
+
+const projectId = computed(() => parseInt(route.params.id as string))
+
+const canCreateTask = computed(() => {
+  const permissions = authStore.user?.permissions || []
+  return permissions.includes('task:create')
+})
+
+const canEditTask = computed(() => {
+  const permissions = authStore.user?.permissions || []
+  return permissions.includes('task:edit')
+})
+
+const canDeleteTask = computed(() => {
+  const permissions = authStore.user?.permissions || []
+  return permissions.includes('task:delete')
+})
+
+const showCreateTaskModal = ref(false)
+const showEditTaskModal = ref(false)
+const showDeleteTaskModal = ref(false)
+const showAddMemberModal = ref(false)
+const showDeleteMemberModal = ref(false)
+const selectedTask = ref<Task | null>(null)
+const taskToDelete = ref<number | null>(null)
+const memberToDelete = ref<number | null>(null)
+const watchingTasks = ref<Set<number>>(new Set())
+const expandedTaskId = ref<number | null>(null)
+
+const addMemberForm = ref({
+  user_id: 0,
+})
+
+const createTaskForm = ref({
+  title: '',
+  description: '',
+  status: 'TODO' as 'TODO' | 'IN_PROGRESS' | 'DONE' | 'BLOCKED',
+  assigned_to: 0,
+  due_date: '',
+})
+
+const editTaskForm = ref({
+  title: '',
+  description: '',
+  status: 'TODO' as 'TODO' | 'IN_PROGRESS' | 'DONE' | 'BLOCKED',
+  assigned_to: 0,
+  due_date: '',
+})
+
+function openCreateTaskModal() {
+  createTaskForm.value = {
+    title: '',
+    description: '',
+    status: 'TODO',
+    assigned_to: 0,
+    due_date: '',
+  }
+  showCreateTaskModal.value = true
+}
+
+async function handleCreateTask() {
+  const payload: CreateTaskPayload = {
+    project_id: projectId.value,
+    title: createTaskForm.value.title,
+    description: createTaskForm.value.description || undefined,
+    status: createTaskForm.value.status,
+    assigned_to: createTaskForm.value.assigned_to || undefined,
+    due_date: createTaskForm.value.due_date || undefined,
+  }
+
+  const result = await tasksStore.createTask(payload)
+  if (result.success) {
+    showCreateTaskModal.value = false
+  }
+}
+
+function openEditTaskModal(task: Task) {
+  selectedTask.value = task
+  editTaskForm.value = {
+    title: task.title,
+    description: task.description || '',
+    status: task.status,
+    assigned_to: task.assigned_to || 0,
+    due_date: task.due_date ? task.due_date.split('T')[0] : '',
+  }
+  showEditTaskModal.value = true
+}
+
+async function handleUpdateTask() {
+  if (!selectedTask.value) return
+
+  const payload: UpdateTaskPayload = {
+    title: editTaskForm.value.title,
+    description: editTaskForm.value.description || undefined,
+    status: editTaskForm.value.status,
+    assigned_to: editTaskForm.value.assigned_to || undefined,
+    due_date: editTaskForm.value.due_date || undefined,
+  }
+
+  const result = await tasksStore.updateTask(selectedTask.value.id, payload)
+  if (result.success) {
+    showEditTaskModal.value = false
+    selectedTask.value = null
+  }
+}
+
+function openDeleteTaskModal(taskId: number) {
+  taskToDelete.value = taskId
+  showDeleteTaskModal.value = true
+}
+
+async function handleDeleteTask() {
+  if (taskToDelete.value === null) return
+  await tasksStore.deleteTask(taskToDelete.value)
+  showDeleteTaskModal.value = false
+  taskToDelete.value = null
+}
+
+async function toggleWatch(task: Task) {
+  if (watchingTasks.value.has(task.id)) return
+  
+  watchingTasks.value.add(task.id)
+  const isWatching = task.watchers?.some(w => w.user_id === authStore.user?.id)
+  
+  try {
+    if (isWatching) {
+      await tasksStore.stopWatching(task.id)
+    } else {
+      await tasksStore.startWatching(task.id)
+    }
+  } finally {
+    watchingTasks.value.delete(task.id)
+  }
+}
+
+function getStatusColor(status: string) {
+  const colors: Record<string, string> = {
+    TODO: 'bg-zinc-500/20 text-zinc-400',
+    IN_PROGRESS: 'bg-blue-500/20 text-blue-400',
+    DONE: 'bg-green-500/20 text-green-400',
+    BLOCKED: 'bg-red-500/20 text-red-400',
+  }
+  return colors[status] || 'bg-zinc-500/20 text-zinc-400'
+}
+
+function getUserName(userId: number | null) {
+  if (!userId) return 'Unassigned'
+  const user = usersStore.users.find(u => u.id === userId)
+  return user ? user.name : `User ${userId}`
+}
+
+function isWatching(task: Task) {
+  return task.watchers?.some(w => w.user_id === authStore.user?.id) || false
+}
+
+function toggleAccordion(taskId: number) {
+  expandedTaskId.value = expandedTaskId.value === taskId ? null : taskId
+}
+
+function getWatcherName(watcherUserId: number): string {
+  const user = usersStore.users.find(u => u.id === watcherUserId)
+  return user ? user.name : `User ${watcherUserId}`
+}
+
+function openAddMemberModal() {
+  addMemberForm.value = { user_id: 0 }
+  showAddMemberModal.value = true
+}
+
+async function handleAddMember() {
+  const payload: AddMemberPayload = {
+    user_id: addMemberForm.value.user_id,
+  }
+
+  const result = await projectsStore.addMember(projectId.value, payload)
+  if (result.success) {
+    showAddMemberModal.value = false
+    addMemberForm.value = { user_id: 0 }
+  }
+}
+
+function openDeleteMemberModal(userId: number) {
+  memberToDelete.value = userId
+  showDeleteMemberModal.value = true
+}
+
+async function handleRemoveMember() {
+  if (memberToDelete.value === null) return
+  await projectsStore.removeMember(projectId.value, memberToDelete.value)
+  showDeleteMemberModal.value = false
+  memberToDelete.value = null
+}
+
+function getMemberName(userId: number) {
+  const user = usersStore.users.find(u => u.id === userId)
+  return user ? user.name : `User ${userId}`
+}
+
+onMounted(async () => {
+  await projectsStore.fetchProject(projectId.value)
+  await tasksStore.fetchTasks({ project_id: projectId.value })
+  await usersStore.fetchUsers()
+})
+</script>
+
+<template>
+  <Layout>
+    <div class="p-4 lg:p-6">
+      <!-- Back Button -->
+      <button
+        @click="router.push('/projects')"
+        class="mb-4 text-indigo-400 hover:text-indigo-300 flex items-center gap-2 cursor-pointer"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Projects
+      </button>
+
+      <!-- Project Header -->
+      <div v-if="projectsStore.currentProject" class="mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div>
+            <h2 class="text-xl lg:text-2xl font-semibold text-white">{{ projectsStore.currentProject.name }}</h2>
+            <p class="text-zinc-400 mt-1 text-sm lg:text-base">{{ projectsStore.currentProject.description || 'No description' }}</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-4 text-sm text-zinc-400">
+          <span :class="['inline-flex items-center px-2 py-1 rounded-md text-xs font-medium capitalize', getStatusColor(projectsStore.currentProject.status)]">
+            {{ projectsStore.currentProject.status }}
+          </span>
+          <span v-if="projectsStore.currentProject.start_date">
+            Start: {{ new Date(projectsStore.currentProject.start_date).toLocaleDateString() }}
+          </span>
+          <span v-if="projectsStore.currentProject.end_date">
+            End: {{ new Date(projectsStore.currentProject.end_date).toLocaleDateString() }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Members Section -->
+      <div v-if="projectsStore.currentProject" class="mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-white">Members</h3>
+          <button
+            @click="openAddMemberModal"
+            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors cursor-pointer"
+          >
+            Add Member
+          </button>
+        </div>
+        <div class="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl overflow-hidden">
+          <div v-if="projectsStore.currentProject.members && projectsStore.currentProject.members.length > 0" class="divide-y divide-[var(--color-border)]">
+            <div
+              v-for="member in projectsStore.currentProject.members"
+              :key="member.id"
+              class="p-4 flex items-center justify-between hover:bg-[var(--color-bg-elevated)]"
+            >
+              <div>
+                <p class="text-white font-medium">{{ getMemberName(member.user_id) }}</p>
+                <p class="text-xs text-zinc-400">
+                  Joined: {{ member.joined_at ? new Date(member.joined_at).toLocaleDateString() : 'Unknown' }}
+                </p>
+              </div>
+              <button
+                v-if="projectsStore.currentProject?.created_by !== member.user_id"
+                @click="openDeleteMemberModal(member.user_id)"
+                class="text-red-400 hover:text-red-300 cursor-pointer"
+                title="Remove member"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div v-else class="p-8 text-center text-zinc-400">
+            No members yet
+          </div>
+        </div>
+      </div>
+
+      <!-- Tasks Section -->
+      <div class="mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <h3 class="text-lg font-semibold text-white">Tasks</h3>
+          <button
+            v-if="canCreateTask"
+            @click="openCreateTaskModal"
+            class="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors cursor-pointer"
+          >
+            Create Task
+          </button>
+        </div>
+
+        <!-- Tasks List -->
+        <div class="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-2xl overflow-hidden">
+          <div v-if="tasksStore.loading" class="p-8 text-center">
+            <p class="text-zinc-400">Loading tasks...</p>
+          </div>
+          <div v-else-if="tasksStore.tasks.length === 0" class="p-8 text-center">
+            <p class="text-zinc-400">No tasks found</p>
+          </div>
+          <div v-else class="divide-y divide-[var(--color-border)]">
+            <div
+              v-for="task in tasksStore.tasks"
+              :key="task.id"
+              class="p-4 hover:bg-[var(--color-bg-elevated)] transition-colors"
+            >
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-3 mb-2">
+                    <span :class="['inline-flex items-center px-2 py-1 rounded-md text-xs font-medium', getStatusColor(task.status)]">
+                      {{ task.status }}
+                    </span>
+                    <h4 class="text-base font-medium text-white">{{ task.title }}</h4>
+                  </div>
+                  <p v-if="task.description" class="text-sm text-zinc-400 mb-2">{{ task.description }}</p>
+                  <div class="flex flex-wrap gap-4 text-xs text-zinc-400">
+                    <span>Assigned to: {{ getUserName(task.assigned_to) }}</span>
+                    <span v-if="task.due_date">Due: {{ new Date(task.due_date).toLocaleDateString() }}</span>
+                    <span v-if="task.watchers && task.watchers.length > 0">
+                      {{ task.watchers.length }} watcher{{ task.watchers.length > 1 ? 's' : '' }}
+                    </span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button
+                    @click="toggleWatch(task)"
+                    :disabled="watchingTasks.has(task.id)"
+                    :class="[
+                      'p-2 rounded-lg transition-all duration-300 cursor-pointer transform',
+                      watchingTasks.has(task.id)
+                        ? 'opacity-50 cursor-not-allowed scale-95'
+                        : 'hover:scale-110',
+                      isWatching(task)
+                        ? 'bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 shadow-lg shadow-indigo-500/20'
+                        : 'bg-zinc-700/50 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
+                    ]"
+                    :title="isWatching(task) ? 'Stop watching' : 'Watch task'"
+                  >
+                    <svg
+                      v-if="watchingTasks.has(task.id)"
+                      class="w-5 h-5 animate-spin"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <svg
+                      v-else-if="isWatching(task)"
+                      class="w-5 h-5 transition-all duration-300"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                    </svg>
+                    <svg
+                      v-else
+                      class="w-5 h-5 transition-all duration-300"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </button>
+                  <button
+                    v-if="canEditTask"
+                    @click="openEditTaskModal(task)"
+                    class="p-2 text-indigo-400 hover:text-indigo-300 cursor-pointer"
+                    title="Edit task"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    v-if="canDeleteTask"
+                    @click="openDeleteTaskModal(task.id)"
+                    class="p-2 text-red-400 hover:text-red-300 cursor-pointer"
+                    title="Delete task"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Watchers Accordion -->
+              <div class="mt-3 border-t border-[var(--color-border)] pt-3">
+                <button
+                  @click="toggleAccordion(task.id)"
+                  class="w-full flex items-center justify-between text-sm text-zinc-400 hover:text-zinc-300 transition-colors cursor-pointer"
+                >
+                  <span class="flex items-center gap-2">
+                    <svg
+                      class="w-4 h-4 transition-transform duration-200"
+                      :class="{ 'rotate-90': expandedTaskId === task.id }"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                    <span>
+                      {{ task.watchers && task.watchers.length > 0 
+                        ? `${task.watchers.length} Watcher${task.watchers.length > 1 ? 's' : ''}` 
+                        : 'Watchers' }}
+                    </span>
+                  </span>
+                </button>
+                <div
+                  v-show="expandedTaskId === task.id"
+                  class="mt-2 pl-6 space-y-2 animate-fade-in"
+                >
+                  <div
+                    v-if="task.watchers && task.watchers.length > 0"
+                  >
+                    <div
+                      v-for="watcher in task.watchers"
+                      :key="watcher.id"
+                      class="flex items-center gap-2 text-sm text-zinc-400"
+                    >
+                      <svg class="w-4 h-4 text-indigo-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                      </svg>
+                      <span>{{ getWatcherName(watcher.user_id) }}</span>
+                      <span v-if="watcher.user_id === authStore.user?.id" class="text-xs text-indigo-400">(You)</span>
+                    </div>
+                  </div>
+                  <div v-else class="text-sm text-zinc-500 italic">
+                    No watchers yet
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create Task Modal -->
+      <Modal :is-open="showCreateTaskModal" title="Create Task" @close="showCreateTaskModal = false" size="lg">
+        <form @submit.prevent="handleCreateTask" class="space-y-4">
+          <div>
+            <label for="create-task-title" class="block text-sm font-medium text-zinc-400 mb-2">Title *</label>
+            <input
+              id="create-task-title"
+              v-model="createTaskForm.title"
+              type="text"
+              required
+              class="w-full px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label for="create-task-description" class="block text-sm font-medium text-zinc-400 mb-2">Description</label>
+            <textarea
+              id="create-task-description"
+              v-model="createTaskForm.description"
+              rows="3"
+              class="w-full px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="create-task-status" class="block text-sm font-medium text-zinc-400 mb-2">Status</label>
+              <select
+                id="create-task-status"
+                v-model="createTaskForm.status"
+                class="w-full px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+              >
+                <option value="TODO">TODO</option>
+                <option value="IN_PROGRESS">IN_PROGRESS</option>
+                <option value="DONE">DONE</option>
+                <option value="BLOCKED">BLOCKED</option>
+              </select>
+            </div>
+            <div>
+              <label for="create-task-assigned" class="block text-sm font-medium text-zinc-400 mb-2">Assign To</label>
+              <select
+                id="create-task-assigned"
+                v-model.number="createTaskForm.assigned_to"
+                class="w-full px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+              >
+                <option :value="0">Unassigned</option>
+                <option
+                  v-for="user in usersStore.users"
+                  :key="user.id"
+                  :value="user.id"
+                >
+                  {{ user.name }} ({{ user.email }})
+                </option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label for="create-task-due-date" class="block text-sm font-medium text-zinc-400 mb-2">Due Date</label>
+            <input
+              id="create-task-due-date"
+              v-model="createTaskForm.due_date"
+              type="date"
+              class="w-full px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            />
+          </div>
+          <div class="flex gap-3 pt-4">
+            <button
+              type="button"
+              @click="showCreateTaskModal = false"
+              class="flex-1 px-4 py-2 border border-[var(--color-border)] text-zinc-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors cursor-pointer"
+            >
+              Create
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <!-- Edit Task Modal -->
+      <Modal :is-open="showEditTaskModal" title="Edit Task" @close="showEditTaskModal = false" size="lg">
+        <form @submit.prevent="handleUpdateTask" class="space-y-4">
+          <div>
+            <label for="edit-task-title" class="block text-sm font-medium text-zinc-400 mb-2">Title *</label>
+            <input
+              id="edit-task-title"
+              v-model="editTaskForm.title"
+              type="text"
+              required
+              class="w-full px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label for="edit-task-description" class="block text-sm font-medium text-zinc-400 mb-2">Description</label>
+            <textarea
+              id="edit-task-description"
+              v-model="editTaskForm.description"
+              rows="3"
+              class="w-full px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="edit-task-status" class="block text-sm font-medium text-zinc-400 mb-2">Status</label>
+              <select
+                id="edit-task-status"
+                v-model="editTaskForm.status"
+                class="w-full px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+              >
+                <option value="TODO">TODO</option>
+                <option value="IN_PROGRESS">IN_PROGRESS</option>
+                <option value="DONE">DONE</option>
+                <option value="BLOCKED">BLOCKED</option>
+              </select>
+            </div>
+            <div>
+              <label for="edit-task-assigned" class="block text-sm font-medium text-zinc-400 mb-2">Assign To</label>
+              <select
+                id="edit-task-assigned"
+                v-model.number="editTaskForm.assigned_to"
+                class="w-full px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+              >
+                <option :value="0">Unassigned</option>
+                <option
+                  v-for="user in usersStore.users"
+                  :key="user.id"
+                  :value="user.id"
+                >
+                  {{ user.name }} ({{ user.email }})
+                </option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label for="edit-task-due-date" class="block text-sm font-medium text-zinc-400 mb-2">Due Date</label>
+            <input
+              id="edit-task-due-date"
+              v-model="editTaskForm.due_date"
+              type="date"
+              class="w-full px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            />
+          </div>
+          <div class="flex gap-3 pt-4">
+            <button
+              type="button"
+              @click="showEditTaskModal = false"
+              class="flex-1 px-4 py-2 border border-[var(--color-border)] text-zinc-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors cursor-pointer"
+            >
+              Update
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <!-- Delete Task Confirmation Modal -->
+      <ConfirmModal
+        :is-open="showDeleteTaskModal"
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action cannot be undone."
+        @confirm="handleDeleteTask"
+        @close="showDeleteTaskModal = false"
+      />
+
+      <!-- Add Member Modal -->
+      <Modal :is-open="showAddMemberModal" title="Add Member" @close="showAddMemberModal = false">
+        <form @submit.prevent="handleAddMember" class="space-y-4">
+          <div>
+            <label for="add-member-user" class="block text-sm font-medium text-zinc-400 mb-2">User *</label>
+            <select
+              id="add-member-user"
+              v-model.number="addMemberForm.user_id"
+              required
+              class="w-full px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            >
+              <option :value="0">Select a user</option>
+              <option
+                v-for="user in usersStore.users.filter(u => {
+                  const isAlreadyMember = projectsStore.currentProject?.members?.some(m => m.user_id === u.id)
+                  const isSuperAdminOrProjectManager = u.roles?.includes('super-admin') || u.roles?.includes('project-manager')
+                  return !isAlreadyMember && !isSuperAdminOrProjectManager
+                })"
+                :key="user.id"
+                :value="user.id"
+              >
+                {{ user.name }} ({{ user.email }})
+              </option>
+            </select>
+          </div>
+          <div class="flex gap-3 pt-4">
+            <button
+              type="button"
+              @click="showAddMemberModal = false"
+              class="flex-1 px-4 py-2 border border-[var(--color-border)] text-zinc-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors cursor-pointer"
+            >
+              Add
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <!-- Delete Member Confirmation Modal -->
+      <ConfirmModal
+        :is-open="showDeleteMemberModal"
+        title="Remove Member"
+        :message="`Are you sure you want to remove ${memberToDelete ? getMemberName(memberToDelete) : 'this member'} from the project?`"
+        @confirm="handleRemoveMember"
+        @close="showDeleteMemberModal = false"
+      />
+    </div>
+  </Layout>
+</template>
+
+<style scoped>
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+</style>
+

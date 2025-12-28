@@ -30,8 +30,7 @@ export class ProjectService {
   async createProject(
     dto: CreateProjectDto,
     userId: number,
-    companyId: number,
-    correlationId?: string
+    companyId: number
     ): Promise<Project> {
     const slug = this.generateSlug(dto.name, companyId);
 
@@ -106,7 +105,7 @@ export class ProjectService {
     };
   }
 
-    async fetchProject(projectId: number, companyId: number, userId: number): Promise<Project> {
+    async fetchProject(projectId: number, companyId: number): Promise<Project> {
         const project = await this.projectRepository.findById(projectId, {
             include: [{ model: ProjectMember, as: 'members' }]
         });
@@ -126,7 +125,6 @@ export class ProjectService {
     projectId: number,
     dto: UpdateProjectDto,
     companyId: number,
-    userId: number,
     correlationId?: string
   ): Promise<Project> {
     const project = await this.projectRepository.findById(projectId);
@@ -212,7 +210,6 @@ export class ProjectService {
     projectId: number,
     dto: AddMemberDto,
     companyId: number,
-    userId: number,
     companyName?: string
     ): Promise<ProjectMember> {
     const project = await this.projectRepository.findById(projectId);
@@ -251,7 +248,6 @@ export class ProjectService {
     projectId: number,
     memberUserId: number,
     companyId: number,
-    userId: number,
     companyName?: string
   ): Promise<void> {
         const project = await this.projectRepository.findById(projectId);

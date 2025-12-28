@@ -22,12 +22,7 @@ export class ProjectController {
       const dto: CreateProjectDto = req.body;
       const user = req.user!;
 
-      const project = await this.projectService.createProject(
-        dto,
-        user.id,
-        user.company_id,
-        req.correlationId
-      );
+      const project = await this.projectService.createProject(dto, user.id, user.company_id);
 
             return sendSuccessResponse(res, ProjectResponseDto.make(project), 'Project created successfully', ResponseStatus.CREATED);
     } catch (error) {
@@ -82,7 +77,7 @@ export class ProjectController {
       const projectId = parseInt(req.params.id);
       const user = req.user!;
 
-            const project = await this.projectService.fetchProject(projectId, user.company_id, user.id);
+            const project = await this.projectService.fetchProject(projectId, user.company_id);
 
             return sendSuccessResponse(res, ProjectResponseDto.make(project), 'Project retrieved successfully');
     } catch (error) {
@@ -100,7 +95,6 @@ export class ProjectController {
         projectId,
         dto,
         user.company_id,
-        user.id,
         req.correlationId
       );
 
@@ -133,7 +127,6 @@ export class ProjectController {
         projectId,
         dto,
         user.company_id,
-        user.id,
         user.company_name || undefined
       );
 
@@ -153,7 +146,6 @@ export class ProjectController {
         projectId,
         userId,
         user.company_id,
-        user.id,
         user.company_name || undefined
       );
 

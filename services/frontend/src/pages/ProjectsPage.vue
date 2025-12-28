@@ -26,12 +26,8 @@ function canDeleteProject(project: Project): boolean {
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const showDeleteModal = ref(false)
-const showViewModal = ref(false)
-const showAddMemberModal = ref(false)
-const showDeleteMemberModal = ref(false)
 const selectedProject = ref<Project | null>(null)
 const projectToDelete = ref<number | null>(null)
-const memberToDelete = ref<number | null>(null)
 
 const createForm = ref({
   name: '',
@@ -48,9 +44,6 @@ const editForm = ref({
   end_date: '',
 })
 
-const addMemberForm = ref({
-  user_id: 0,
-})
 
 function openCreateModal() {
   createForm.value = { name: '', description: '', start_date: '', end_date: '' }
@@ -113,43 +106,10 @@ async function handleDelete() {
   projectToDelete.value = null
 }
 
-async function openViewModal(project: Project) {
-  selectedProject.value = project
-  await projectsStore.fetchProject(project.id)
-  showViewModal.value = true
+function openViewModal(project: Project) {
+  router.push(`/projects/${project.id}`)
 }
 
-function openAddMemberModal() {
-  if (!selectedProject.value) return
-  addMemberForm.value = { user_id: 0 }
-  showAddMemberModal.value = true
-}
-
-async function handleAddMember() {
-  if (!selectedProject.value) return
-
-  const payload: AddMemberPayload = {
-    user_id: addMemberForm.value.user_id,
-  }
-
-  const result = await projectsStore.addMember(selectedProject.value.id, payload)
-  if (result.success) {
-    showAddMemberModal.value = false
-    addMemberForm.value = { user_id: 0 }
-  }
-}
-
-function openDeleteMemberModal(userId: number) {
-  memberToDelete.value = userId
-  showDeleteMemberModal.value = true
-}
-
-async function handleRemoveMember() {
-  if (!selectedProject.value || memberToDelete.value === null) return
-  await projectsStore.removeMember(selectedProject.value.id, memberToDelete.value)
-  showDeleteMemberModal.value = false
-  memberToDelete.value = null
-}
 
 function getStatusColor(status: string) {
   const colors: Record<string, string> = {
@@ -229,12 +189,12 @@ onMounted(() => {
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    @click="openViewModal(project)"
+                  <router-link
+                    :to="`/projects/${project.id}`"
                     class="text-indigo-400 hover:text-indigo-300 mr-4 cursor-pointer"
                   >
                     View
-                  </button>
+                  </router-link>
                   <button
                     @click="openEditModal(project)"
                     class="text-indigo-400 hover:text-indigo-300 mr-4 cursor-pointer"
@@ -266,8 +226,8 @@ onMounted(() => {
                 <div class="text-sm text-zinc-400 mt-1 line-clamp-2">{{ project.description || 'No description' }}</div>
               </div>
               <div class="flex gap-2 ml-4">
-                <button
-                  @click="openViewModal(project)"
+                <router-link
+                  :to="`/projects/${project.id}`"
                   class="text-indigo-400 hover:text-indigo-300 cursor-pointer"
                   aria-label="View project"
                 >
@@ -275,7 +235,7 @@ onMounted(() => {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
-                </button>
+                </router-link>
                 <button
                   @click="openEditModal(project)"
                   class="text-indigo-400 hover:text-indigo-300 cursor-pointer"
@@ -441,116 +401,6 @@ onMounted(() => {
         </form>
       </Modal>
 
-      <!-- View Modal (with members) -->
-      <Modal :is-open="showViewModal" title="Project Details" @close="showViewModal = false" size="xl">
-        <div v-if="projectsStore.currentProject" class="space-y-6">
-          <div>
-            <h3 class="text-lg font-semibold text-white mb-2">{{ projectsStore.currentProject.name }}</h3>
-            <p class="text-zinc-400">{{ projectsStore.currentProject.description || 'No description' }}</p>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-zinc-400 mb-1">Status</label>
-              <span :class="['inline-flex items-center px-2 py-1 rounded-md text-xs font-medium capitalize', getStatusColor(projectsStore.currentProject.status)]">
-                {{ projectsStore.currentProject.status.replace('_', ' ') }}
-              </span>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-zinc-400 mb-1">Start Date</label>
-              <p class="text-white">
-                {{ projectsStore.currentProject.start_date ? new Date(projectsStore.currentProject.start_date).toLocaleDateString() : 'Not set' }}
-              </p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-zinc-400 mb-1">End Date</label>
-              <p class="text-white">
-                {{ projectsStore.currentProject.end_date ? new Date(projectsStore.currentProject.end_date).toLocaleDateString() : 'Not set' }}
-              </p>
-            </div>
-          </div>
-          <div>
-            <div class="flex items-center justify-between mb-3">
-              <label class="block text-sm font-medium text-zinc-400">Members</label>
-              <button
-                @click="openAddMemberModal"
-                class="px-3 py-1 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors cursor-pointer"
-              >
-                Add Member
-              </button>
-            </div>
-            <div v-if="projectsStore.currentProject.members && projectsStore.currentProject.members.length > 0" class="space-y-2">
-              <div
-                v-for="member in projectsStore.currentProject.members"
-                :key="member.id"
-                class="flex items-center justify-between p-3 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg"
-              >
-                <div>
-                  <p class="text-white font-medium">{{ getMemberName(member.user_id) }}</p>
-                  <p class="text-xs text-zinc-400">
-                    Joined: {{ member.joined_at ? new Date(member.joined_at).toLocaleDateString() : 'Unknown' }}
-                  </p>
-                </div>
-                <button
-                  v-if="selectedProject?.created_by !== member.user_id"
-                  @click="openDeleteMemberModal(member.user_id)"
-                  class="text-red-400 hover:text-red-300 cursor-pointer"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div v-else class="p-4 text-center text-zinc-400 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg">
-              No members yet
-            </div>
-          </div>
-        </div>
-      </Modal>
-
-      <!-- Add Member Modal -->
-      <Modal :is-open="showAddMemberModal" title="Add Member" @close="showAddMemberModal = false">
-        <form @submit.prevent="handleAddMember" class="space-y-4">
-          <div>
-            <label for="add-member-user" class="block text-sm font-medium text-zinc-400 mb-2">User *</label>
-            <select
-              id="add-member-user"
-              v-model.number="addMemberForm.user_id"
-              required
-              class="w-full px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-            >
-              <option :value="0">Select a user</option>
-              <option
-                v-for="user in usersStore.users.filter(u => {
-                  const isAlreadyMember = projectsStore.currentProject?.members?.some(m => m.user_id === u.id)
-                  const isSuperAdminOrProjectManager = u.roles?.includes('super-admin') || u.roles?.includes('project-manager')
-                  return !isAlreadyMember && !isSuperAdminOrProjectManager
-                })"
-                :key="user.id"
-                :value="user.id"
-              >
-                {{ user.name }} ({{ user.email }})
-              </option>
-            </select>
-          </div>
-          <div class="flex gap-3 pt-4">
-            <button
-              type="button"
-              @click="showAddMemberModal = false"
-              class="flex-1 px-4 py-2 border border-[var(--color-border)] text-zinc-400 hover:text-white rounded-lg transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              class="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors cursor-pointer"
-            >
-              Add
-            </button>
-          </div>
-        </form>
-      </Modal>
-
       <!-- Delete Project Confirmation Modal -->
       <ConfirmModal
         :is-open="showDeleteModal"
@@ -558,15 +408,6 @@ onMounted(() => {
         message="Are you sure you want to delete this project? This action cannot be undone."
         @confirm="handleDelete"
         @close="showDeleteModal = false"
-      />
-
-      <!-- Delete Member Confirmation Modal -->
-      <ConfirmModal
-        :is-open="showDeleteMemberModal"
-        title="Remove Member"
-        :message="`Are you sure you want to remove ${memberToDelete ? getMemberName(memberToDelete) : 'this member'} from the project?`"
-        @confirm="handleRemoveMember"
-        @close="showDeleteMemberModal = false"
       />
     </div>
   </Layout>

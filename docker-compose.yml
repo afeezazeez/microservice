@@ -206,24 +206,22 @@ services:
     networks:
       - microservices-network
 
-  # task-service:
-  #   build:
-  #     context: ./services/task-service
-  #     dockerfile: Dockerfile
-  #   container_name: task-task-service
-  #   ports:
-  #     - "3002:3002"
-  #   env_file:
-  #     - ./services/task-service/.env
-  #   volumes:
-  #     - ./services/task-service:/app
-  #   depends_on:
-  #     mysql:
-  #       condition: service_healthy
-  #     rabbitmq:
-  #       condition: service_healthy
-  #   networks:
-  #     - microservices-network
+  task-service:
+    build:
+      context: ./services/task-service
+      dockerfile: Dockerfile
+    container_name: task-service
+    expose:
+      - "3002"
+    env_file:
+      - ./services/task-service/.env
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices-network
 
   notification-service:
     build:
