@@ -23,6 +23,12 @@
       <td style="padding: 8px 0; color: #94a3b8; font-size: 14px;">Password:</td>
       <td style="padding: 8px 0; color: #ffffff; font-size: 14px; font-weight: 600;"><%= userEmail %></td>
     </tr>
+    <% if (roleName) { %>
+    <tr>
+      <td style="padding: 8px 0; color: #94a3b8; font-size: 14px;">Role:</td>
+      <td style="padding: 8px 0; color: #ffffff; font-size: 14px; font-weight: 600;"><%= roleName %></td>
+    </tr>
+    <% } %>
   </table>
   <p style="margin: 15px 0 0 0; color: #fbbf24; font-size: 13px;">
     ⚠️ Your temporary password is your email address. Please change it after your first login.

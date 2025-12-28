@@ -6,6 +6,8 @@ export interface UserInvitedEvent {
     user_email: string;
     company_id: number;
     company_name: string;
+    role_slug: string;
+    role_name: string;
     invited_at: string;
   };
 }

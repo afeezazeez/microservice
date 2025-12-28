@@ -76,6 +76,7 @@ export class EmailService {
     userName: string;
     userEmail: string;
     companyName: string;
+    roleName: string;
   }): Promise<void> {
     await this.sendEmail({
       to: data.to,
@@ -86,6 +87,7 @@ export class EmailService {
         userName: data.userName,
         userEmail: data.userEmail,
         companyName: data.companyName,
+        roleName: data.roleName,
         loginUrl: `${config.frontendUrl}/login`,
       },
     });

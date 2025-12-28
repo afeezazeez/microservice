@@ -5,23 +5,32 @@ namespace App\Services;
 use App\Exceptions\ClientErrorException;
 use App\Repositories\UserRepository;
 use App\Repositories\CompanyRepository;
+use App\Repositories\RoleRepository;
 use App\Services\RoleService;
+use App\Services\RabbitMQService;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class UserService
 {
     private UserRepository $userRepository;
     private CompanyRepository $companyRepository;
     private RoleService $roleService;
+    private RoleRepository $roleRepository;
+    private RabbitMQService $rabbitMQService;
 
     public function __construct(
         UserRepository $userRepository,
         CompanyRepository $companyRepository,
-        RoleService $roleService
+        RoleService $roleService,
+        RoleRepository $roleRepository,
+        RabbitMQService $rabbitMQService
     ) {
         $this->userRepository = $userRepository;
         $this->companyRepository = $companyRepository;
         $this->roleService = $roleService;
+        $this->roleRepository = $roleRepository;
+        $this->rabbitMQService = $rabbitMQService;
     }
 
     public function listUsers(int $companyId, array $filters = []): array
@@ -152,14 +161,47 @@ class UserService
             'password' => Hash::make($data['email']),
         ]);
 
+        $roleSlug = null;
+        $roleName = null;
         if (isset($data['role_slug'])) {
+            $roleSlug = $data['role_slug'];
             $this->roleService->assignRole(
                 $user->id,
-                $data['role_slug'],
+                $roleSlug,
                 $companyId,
                 $data['resource_type'] ?? null,
                 $data['resource_id'] ?? null
             );
+            
+            $role = $this->roleRepository->findBy('slug', $roleSlug);
+            if ($role) {
+                $roleName = $role->name;
+            }
+        }
+
+        try {
+            $this->rabbitMQService->publish(
+                config('rabbitmq.exchanges.user_events'),
+                'user.invited',
+                [
+                    'event' => 'user.invited',
+                    'data' => [
+                        'user_id' => $user->id,
+                        'user_name' => $user->name,
+                        'user_email' => $user->email,
+                        'company_id' => $company->id,
+                        'company_name' => $company->name,
+                        'role_slug' => $roleSlug ?? '',
+                        'role_name' => $roleName ?? '',
+                        'invited_at' => now()->toISOString(),
+                    ],
+                ]
+            );
+        } catch (\Exception $e) {
+            Log::error('Failed to publish user.invited event to RabbitMQ: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+            ]);
         }
 
         return [

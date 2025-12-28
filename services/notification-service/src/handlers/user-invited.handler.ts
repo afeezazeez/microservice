@@ -16,6 +16,7 @@ export class UserInvitedHandler implements IEventHandler {
       userName: event.data.user_name,
       userEmail: event.data.user_email,
       companyName: event.data.company_name,
+      roleName: event.data.role_name,
     });
   }
 }
