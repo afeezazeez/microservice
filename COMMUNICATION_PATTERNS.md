@@ -46,104 +46,171 @@ Frontend → API Gateway → Service
 
 ### Exchange Types:
 
-#### Direct Exchange
-- Routes to specific queue based on routing key
-- **Use case**: Task assignment → Specific user notification
+#### Topic Exchange (Currently Used)
+- Routes based on routing key matching
+- **Use case**: User events, Project events
 
+**Publishing from IAM Service (Laravel/PHP):**
+```php
+// IAM Service publishes user.created event
+$this->rabbitMQService->publish(
+    config('rabbitmq.exchanges.user_events'),
+    'user.created',
+    [
+        'event' => 'user.created',
+        'data' => [
+            'id' => $user->id,
+            'company_id' => $user->company_id,
+            'name' => $user->name,
+            'email' => $user->email,
+        ],
+    ]
+);
+```
+
+**Publishing from Project Service (Node.js/TypeScript):**
 ```typescript
-// Task Service publishes
-rabbitmq.publish('notifications.direct', 'user.123', {
-  userId: 123,
-  message: 'Task assigned to you'
-});
-
-// Notification Service consumes
-rabbitmq.consume('notifications.direct', 'user.123', (message) => {
-  // Send notification to user 123
+// Project Service publishes project.member.added event
+await this.rabbitMQService.publish('project.events', 'project.member.added', {
+  event: 'project.member.added',
+  data: {
+    project_name: project.name,
+    user_id: dto.user_id,
+    company_name: companyName || '',
+  },
 });
 ```
 
-#### Topic Exchange
-- Routes based on pattern matching
-- **Use case**: Project updates → Notify all project members
-
+**Consuming in Notification Service (Node.js/TypeScript):**
 ```typescript
-// Task Service publishes
-rabbitmq.publish('notifications.topic', 'project.123.task.created', {
-  projectId: 123,
-  taskId: 456
-});
+// Notification Service automatically consumes events
+// Events are routed to queues based on routing keys:
+// - user.created → user.created queue
+// - user.updated → user.updated queue
+// - user.deleted → user.deleted queue
+// - user.invited → user.invited queue
+// - project.member.added → project.member.added queue
+// - project.member.removed → project.member.removed queue
 
-// Notification Service consumes with pattern
-rabbitmq.consume('notifications.topic', 'project.*.task.*', (message) => {
-  // Notify all project members
-});
+// Handlers are registered via EventHandlerFactory
+const handler = EventHandlerFactory.getHandler(event.event);
+await handler.handle(event);
 ```
 
-#### Fanout Exchange
-- Broadcasts to all queues
-- **Use case**: System-wide announcements
+---
 
-```typescript
-// Admin Service publishes
-rabbitmq.publish('announcements.fanout', '', {
-  message: 'System maintenance scheduled'
-});
+## Event-Driven Architecture & User Synchronization
 
-// All services consume
-rabbitmq.consume('announcements.fanout', '', (message) => {
-  // Handle announcement
-});
+### User Synchronization (IAM ↔ Notification Service)
+
+The Notification Service maintains a local copy of user data to enable efficient lookups and notifications without constantly querying the IAM service. This synchronization happens automatically through RabbitMQ events:
+
+**How it works:**
+1. **User Created**: When a user registers or is invited in the IAM service, a `user.created` event is published with user details (ID, company ID, name, email - password excluded)
+2. **User Updated**: When user information changes in IAM, a `user.updated` event is published with the updated user snapshot
+3. **User Deleted**: When a user is deleted, a `user.deleted` event is published with just the user ID
+4. **Notification Service**: Consumes these events and maintains a local `users` table, keeping it in sync with the IAM service
+
+**Benefits:**
+- **Decoupled**: Notification service doesn't need direct database access to IAM
+- **Efficient**: Fast user lookups for sending notifications without HTTP calls
+- **Resilient**: Works even if IAM service is temporarily unavailable
+- **Eventual Consistency**: User data stays synchronized through events
+
+### RabbitMQ Events Overview
+
+The system uses **Topic Exchanges** for event-driven communication. Here's an overview of the events being processed:
+
+#### User Events (`user.events` exchange)
+- **`user.created`** - Published when a user registers or is invited. Notification service creates a local user record.
+- **`user.updated`** - Published when user details are modified. Notification service updates its local user record.
+- **`user.deleted`** - Published when a user is removed. Notification service deletes the local user record.
+- **`user.invited`** - Published when a user is invited to a company. Triggers welcome email with company and role information.
+
+#### Project Events (`project.events` exchange)
+- **`project.member.added`** - Published when a user is added to a project. Notification service looks up user details from its local database and sends a notification email.
+- **`project.member.removed`** - Published when a user is removed from a project (or when a project is deleted). Notification service sends a removal notification email.
+
+**Event Flow Example:**
 ```
+IAM Service (User Created)
+    ↓ publishes user.created event
+RabbitMQ (Topic Exchange)
+    ↓ routes to notification-service queue
+Notification Service
+    ↓ consumes event
+    ↓ creates user in local database
+    ↓ ready to send notifications
+```
+
+**Why this pattern?**
+- **Loose Coupling**: Services don't need to know about each other's internal structure
+- **Scalability**: Events can be consumed by multiple services if needed
+- **Reliability**: Events are persisted in RabbitMQ, ensuring no data loss
+- **Performance**: Asynchronous processing doesn't block the main request flow
 
 ---
 
 ## Communication Examples
 
-### Example 1: Creating a Task
+### Example 1: User Invitation Flow
 
 ```
-1. Frontend → API Gateway (HTTP)
-   POST /api/v1/projects/123/tasks
+1. IAM Service (Laravel)
+   UserService::inviteUser() creates user
+   
+2. IAM Service → RabbitMQ (Async)
+   $this->rabbitMQService->publish(
+       'user.events',
+       'user.created',
+       ['event' => 'user.created', 'data' => {...}]
+   )
+   
+3. IAM Service → RabbitMQ (Async)
+   $this->rabbitMQService->publish(
+       'user.events',
+       'user.invited',
+       ['event' => 'user.invited', 'data' => {...}]
+   )
 
-2. API Gateway → IAM Service (HTTP RPC)
-   Check permission: 'task:create' on project 123
-   Response: { hasAccess: true }
-
-3. API Gateway → Task Service (HTTP)
-   POST /tasks { projectId: 123, title: "New task" }
-
-4. Task Service → RabbitMQ (Async)
-   Publish: 'project.123.task.created'
-
-5. Notification Service (consumes from RabbitMQ)
-   Notify all project members
-
-6. Task Service → API Gateway → Frontend (HTTP Response)
-   { taskId: 456, ... }
+4. Notification Service (consumes from RabbitMQ)
+   - user.created event → Creates user in local database
+   - user.invited event → Sends welcome email with company/role info
 ```
 
-### Example 2: File Upload
+### Example 2: Adding Project Member
 
 ```
-1. Frontend → API Gateway (HTTP)
-   POST /api/v1/files/upload
+1. Project Service (Node.js)
+   ProjectService::addMember() adds user to project
+   
+2. Project Service → RabbitMQ (Async)
+   await this.rabbitMQService.publish('project.events', 'project.member.added', {
+     event: 'project.member.added',
+     data: { project_name, user_id, company_name }
+   })
 
-2. API Gateway → IAM Service (HTTP RPC)
-   Check permission: 'task:create' on project 123
-   Response: { hasAccess: true }
+3. Notification Service (consumes from RabbitMQ)
+   - Looks up user details from local database
+   - Sends notification email to user
+```
 
-3. API Gateway → File Service (HTTP)
-   POST /files/upload (multipart/form-data)
+### Example 3: User Registration Flow
 
-4. File Service → MinIO (S3 API)
-   Upload file to bucket
+```
+1. IAM Service (Laravel)
+   AuthService::registerUser() creates new user
+   
+2. IAM Service → RabbitMQ (Async)
+   $this->rabbitMQService->publish(
+       'user.events',
+       'user.created',
+       ['event' => 'user.created', 'data' => {...}]
+   )
 
-5. File Service → RabbitMQ (Async - Topic Exchange)
-   Publish: 'file.uploaded' → Analytics Service
-
-6. File Service → API Gateway → Frontend (HTTP Response)
-   { fileId: 789, url: '...' }
+3. Notification Service (consumes from RabbitMQ)
+   - Creates user record in local users table
+   - User data now available for future notifications
 ```
 
 ---

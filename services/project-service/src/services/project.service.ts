@@ -191,15 +191,17 @@ export class ProjectService {
         await this.projectMemberRepository.hardDelete(member.id);
       }
 
-      // Publish member removed event for each member
-      await this.rabbitMQService.publish('project.events', 'project.member.removed', {
-        event: 'project.member.removed',
-        data: {
-          project_name: project.name,
-          user_id: member.user_id,
-          company_name: companyName || '',
-        },
-      });
+      // Publish member removed event only for other members (not the user deleting the project)
+      if (member.user_id !== userId) {
+        await this.rabbitMQService.publish('project.events', 'project.member.removed', {
+          event: 'project.member.removed',
+          data: {
+            project_name: project.name,
+            user_id: member.user_id,
+            company_name: companyName || '',
+          },
+        });
+      }
     }
 
     await this.projectRepository.hardDelete(projectId);

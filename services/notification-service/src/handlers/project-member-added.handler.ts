@@ -29,7 +29,7 @@ export class ProjectMemberAddedHandler implements IEventHandler {
       });
     } catch (error: any) {
       logger.error(`Failed to handle project member added event: ${error.message}`, {
-        project_id: event.data.project_id,
+        project_name: event.data.project_name,
         user_id: event.data.user_id,
       });
       throw error;

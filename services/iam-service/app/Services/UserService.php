@@ -253,6 +253,8 @@ class UserService
                     'event' => 'user.invited',
                     'data' => [
                         'user_id' => $user->id,
+                        'user_email' => $user->email,
+                        'user_name' => $user->name,
                         'company_name' => $company->name,
                         'role_name' => $roleName ?? '',
                     ],

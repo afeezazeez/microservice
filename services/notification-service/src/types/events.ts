@@ -29,6 +29,8 @@ export interface UserInvitedEvent {
   event: 'user.invited';
   data: {
     user_id: number;
+    user_email: string;
+    user_name: string;
     company_name: string;
     role_name: string;
   };

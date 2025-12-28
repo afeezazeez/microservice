@@ -48,9 +48,8 @@ export class RabbitMQService {
 
       if (!published) {
         this.logger.warn(`Message not published to exchange ${exchange} with routing key ${routingKey}`);
-      } else {
-        this.logger.info(`Published message to ${exchange} with routing key ${routingKey}`);
       }
+      // Removed info log to reduce noise in Grafana - only log warnings/errors
     } catch (error) {
       this.logger.error(`Failed to publish message to RabbitMQ: ${error instanceof Error ? error.message : String(error)}`, {
         exchange,

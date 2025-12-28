@@ -1,27 +1,20 @@
-FROM node:20-alpine as base
+FROM node:20-alpine
+
 WORKDIR /app
 
-# Install dependencies first
-COPY package.json package-lock.json* ./
-RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi
+COPY package*.json ./
 
-# Build stage for TypeScript
-FROM base as builder
-WORKDIR /app
+RUN npm install
+
 COPY . .
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm run build
 
-# Runtime image
-FROM node:20-alpine as runtime
-WORKDIR /app
-ENV NODE_ENV=production
+RUN npm run build
 
-# Copy only needed files
-COPY --from=builder /app/package.json /app/package-lock.json* ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/views ./views
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 3003
-CMD ["npm", "start"]
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["node", "dist/server.js"]
 

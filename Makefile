@@ -9,7 +9,7 @@ RED := \033[0;31m
 NC := \033[0m
 
 # Service mappings
-SERVICES := iam-service project-service notification-service api-gateway frontend task-service file-service analytics-service
+SERVICES := iam-service iam-nginx project-service notification-service api-gateway frontend task-service file-service analytics-service
 INFRA := traefik mysql redis rabbitmq minio loki promtail grafana
 
 help: ## Show help message
@@ -48,19 +48,9 @@ help: ## Show help message
 # Full setup - builds, starts, migrates, seeds everything
 start-all: build ## Setup and start all services
 	@echo "$(BLUE)🚀 Starting all services...$(NC)"
-	@docker-compose up -d --build $(INFRA) || true
-	@sleep 5
-	@docker-compose up -d --build $(SERVICES) || true
+	@docker-compose up -d --build || true
 	@echo "$(BLUE)⏳ Waiting for services to be healthy...$(NC)"
 	@sleep 10
-	@echo "$(BLUE)🗄️  Running migrations...$(NC)"
-	@$(MAKE) migrate iam-service || true
-	@$(MAKE) migrate project-service || true
-	@$(MAKE) migrate notification-service || true
-	@echo "$(BLUE)🌱 Seeding IAM service...$(NC)"
-	@docker-compose exec -T iam-service php artisan db:seed --force || true
-	@echo "$(BLUE)📚 Generating Swagger docs...$(NC)"
-	@docker-compose exec -T iam-service php artisan l5-swagger:generate || true
 	@$(MAKE) status
 
 # Stop all services
@@ -118,23 +108,23 @@ logs: ## Show logs (usage: make logs [service-name])
 
 # Run migrations for a service
 migrate: ## Run migrations (usage: make migrate [service-name])
-	@SERVICE_NAME="$(filter-out $@,$(MAKECMDGOALS))"; \
+	@SERVICE_NAME="$(word 2,$(MAKECMDGOALS))"; \
 	if [ -z "$$SERVICE_NAME" ]; then \
 		echo "$(RED)❌ Please specify a service: make migrate project-service$(NC)"; \
 		exit 1; \
-	fi
-	@case "$$SERVICE_NAME" in \
+	fi; \
+	case "$$SERVICE_NAME" in \
 		iam-service) \
-			echo "$(BLUE)🗄️  Running IAM migrations...$(NC)"; \
-			docker-compose exec -T iam-service php artisan migrate --force || true; \
+			echo "$(BLUE)🗄️  Running IAM migrations and seed...$(NC)"; \
+			docker-compose exec -T iam-service composer migrate:seed || true; \
 			;; \
 		project-service) \
 			echo "$(BLUE)🗄️  Running Project migrations...$(NC)"; \
-			docker-compose exec -T project-service npx sequelize-cli db:migrate || true; \
+			docker-compose exec -T project-service npm run migrate || true; \
 			;; \
 		notification-service) \
 			echo "$(BLUE)🗄️  Running Notification migrations...$(NC)"; \
-			docker-compose exec -T notification-service npx sequelize-cli db:migrate || true; \
+			docker-compose exec -T notification-service npm run migrate || true; \
 			;; \
 		*) \
 			echo "$(YELLOW)⚠️  Migrations not configured for $$SERVICE_NAME$(NC)"; \
@@ -143,7 +133,7 @@ migrate: ## Run migrations (usage: make migrate [service-name])
 
 # Run tests for a service
 test: ## Run tests (usage: make test [service-name])
-	@SERVICE_NAME="$(filter-out $@,$(MAKECMDGOALS))"; \
+	@SERVICE_NAME="$(word 2,$(MAKECMDGOALS))"; \
 	if [ -z "$$SERVICE_NAME" ]; then \
 		echo "$(RED)❌ Please specify a service: make test iam-service$(NC)"; \
 		exit 1; \
@@ -207,6 +197,11 @@ status: ## Display all service URLs and documentation links
 		echo "    💚 Health: https://notification-service.afeez-dev.local/health"; \
 		echo ""; \
 	fi
+	@if docker-compose ps | grep -q "frontend.*Up"; then \
+		echo "$(YELLOW)✓ Frontend (Vue 3 + TypeScript)$(NC)"; \
+		echo "    🌐 App:  https://app.afeez-dev.local"; \
+		echo ""; \
+	fi
 	@if docker-compose ps | grep -q "file-service.*Up"; then \
 		echo "$(YELLOW)✓ File Service (Node.js)$(NC)"; \
 		echo "    🌐 API:  https://file-service.afeez-dev.local"; \
@@ -228,11 +223,6 @@ status: ## Display all service URLs and documentation links
 		echo "    ↪️  Proxies Notification Service: https://notification-service.afeez-dev.local"; \
 		echo "    ↪️  Proxies File Service: https://file-service.afeez-dev.local"; \
 		echo "    ↪️  Proxies Analytics Service: https://analytics-service.afeez-dev.local"; \
-		echo ""; \
-	fi
-	@if docker-compose ps | grep -q "frontend.*Up"; then \
-		echo "$(YELLOW)✓ Frontend (Vue 3 + TypeScript)$(NC)"; \
-		echo "    🌐 App:  https://app.afeez-dev.local"; \
 		echo ""; \
 	fi
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

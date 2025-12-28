@@ -298,6 +298,8 @@ All databases run on a single MySQL instance (can be split into separate instanc
 - File uploaded → Analytics Service
 - Project updated → Notification Service
 
+> For detailed information about event-driven architecture, user synchronization, and RabbitMQ events, see [COMMUNICATION_PATTERNS.md](./COMMUNICATION_PATTERNS.md)
+
 
 
 ## Environment Variables
