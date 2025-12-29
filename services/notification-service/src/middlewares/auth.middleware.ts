@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
 import { logger } from '../utils/logger';
+import { AuthenticationException } from '../exceptions/authentication.exception';
 
 export interface JwtPayload {
   id: number;
@@ -32,19 +33,15 @@ export interface AuthenticatedRequest extends Request {
 }
 
 export async function authMiddleware(
-  req: Request,
-  res: Response,
+  req: AuthenticatedRequest,
+  _res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const authHeader = req.headers.authorization;
+    const authHeader = req.headers.authorization as string | undefined;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({
-        success: false,
-        error_message: 'Missing or invalid authorization header',
-      });
-      return;
+      throw new AuthenticationException('Missing or invalid authorization header');
     }
 
     const token = authHeader.substring(7);
@@ -53,14 +50,10 @@ export async function authMiddleware(
     const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
 
     if (decoded.type && decoded.type !== 'access') {
-      res.status(401).json({
-        success: false,
-        error_message: 'Invalid token type',
-      });
-      return;
+      throw new AuthenticationException('Invalid token type');
     }
 
-    (req as AuthenticatedRequest).user = {
+    req.user = {
       id: decoded.id,
       email: decoded.email,
       name: decoded.name,
@@ -72,25 +65,28 @@ export async function authMiddleware(
 
     next();
   } catch (error) {
+    if (error instanceof AuthenticationException) {
+      next(error);
+      return;
+    }
+
     if (error instanceof jwt.TokenExpiredError) {
-      res.status(401).json({
-        success: false,
-        error_message: 'Token expired',
-      });
+      next(new AuthenticationException('Token expired'));
       return;
     }
+
     if (error instanceof jwt.JsonWebTokenError) {
-      res.status(401).json({
-        success: false,
-        error_message: 'Invalid token',
-      });
+      next(new AuthenticationException('Invalid token'));
       return;
     }
+
+    if (error instanceof jwt.NotBeforeError) {
+      next(new AuthenticationException('Token not active'));
+      return;
+    }
+
     logger.error(`Auth middleware error: ${error instanceof Error ? error.message : String(error)}`);
-    res.status(401).json({
-      success: false,
-      error_message: 'Unauthorized',
-    });
+    next(new AuthenticationException('Authentication failed'));
   }
 }
 

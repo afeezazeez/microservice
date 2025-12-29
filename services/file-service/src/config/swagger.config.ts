@@ -11,8 +11,8 @@ const options: swaggerJsdoc.Options = {
     },
     servers: [
       {
-        url: `http://localhost:${configService.port}`,
-        description: 'Development server',
+        url: 'https://file-service.afeez-dev.local/api',
+        description: 'File Service API Server',
       },
     ],
     components: {

@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { NotificationService } from '../services/notification.service';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
+import { sendSuccessResponse } from '../utils/http/response-handlers';
+import { ResponseStatus } from '../enums/http-status-codes';
 
 export class NotificationController {
   private notificationService: NotificationService;
@@ -17,11 +19,7 @@ export class NotificationController {
 
       const notifications = await this.notificationService.getNotifications(user.id, filter);
 
-      return res.status(200).json({
-        success: true,
-        data: notifications,
-        message: 'Notifications retrieved successfully',
-      });
+      return sendSuccessResponse(res, notifications, 'Notifications retrieved successfully');
     } catch (error) {
       next(error);
     }
@@ -35,11 +33,7 @@ export class NotificationController {
 
       await this.notificationService.markAsRead(notificationId, user.id);
 
-      return res.status(200).json({
-        success: true,
-        data: null,
-        message: 'Notification marked as read',
-      });
+      return sendSuccessResponse(res, null, 'Notification marked as read');
     } catch (error) {
       next(error);
     }
@@ -53,11 +47,7 @@ export class NotificationController {
 
       await this.notificationService.deleteNotification(notificationId, user.id);
 
-      return res.status(200).json({
-        success: true,
-        data: null,
-        message: 'Notification deleted successfully',
-      });
+      return sendSuccessResponse(res, null, 'Notification deleted successfully');
     } catch (error) {
       next(error);
     }
@@ -70,11 +60,7 @@ export class NotificationController {
 
       const count = await this.notificationService.getUnreadCount(user.id);
 
-      return res.status(200).json({
-        success: true,
-        data: { count },
-        message: 'Unread count retrieved successfully',
-      });
+      return sendSuccessResponse(res, { count }, 'Unread count retrieved successfully');
     } catch (error) {
       next(error);
     }

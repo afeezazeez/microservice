@@ -5,6 +5,9 @@ import { logger } from './utils/logger';
 import { RabbitMQService } from './services/rabbitmq.service';
 import { initializeDatabase } from './config/database.config';
 import { notificationsRouter } from './routes/notifications';
+import { errorHandler } from './middlewares/error.handler';
+import { ClientErrorException } from './exceptions/client.error.exception';
+import { ResponseStatus } from './enums/http-status-codes';
 
 const app = express();
 
@@ -27,13 +30,11 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/notifications', notificationsRouter);
 
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  logger.error(`Error: ${err.message}`, { stack: err.stack });
-  res.status(500).json({
-    success: false,
-    error_message: err.message || 'Internal server error',
-  });
+app.use((_req: Request, _res: Response, next: NextFunction) => {
+  next(new ClientErrorException('Route not found', ResponseStatus.NOT_FOUND));
 });
+
+app.use(errorHandler);
 
 export async function initializeServices(): Promise<void> {
   try {
