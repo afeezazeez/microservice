@@ -63,13 +63,7 @@ A comprehensive microservices demonstration project showcasing:
 - **Storage**: MinIO (S3-compatible) for local dev, AWS S3 for production
 - **Tech**: Node.js, TypeScript, Express
 
-### 6. Analytics Service (Node.js + TS)
-- **Port**: 3005
-- **Responsibilities**: Reports, Dashboards, Metrics
-- **Database**: `analytics_db` (MySQL with Sequelize)
-- **Tech**: Node.js, TypeScript, Express
-
-### 7. API Gateway (Node.js + TS)
+### 6. API Gateway (Node.js + TS)
 - **Port**: 3000
 - **Responsibilities**: Routing, Auth validation, IAM checks
 - **Tech**: Node.js, TypeScript, Express
@@ -106,7 +100,6 @@ Add these to your hosts file (copy/paste ready):
 127.0.0.1 task-service.afeez-dev.local
 127.0.0.1 notification-service.afeez-dev.local
 127.0.0.1 file-service.afeez-dev.local
-127.0.0.1 analytics-service.afeez-dev.local
 127.0.0.1 minio.afeez-dev.local
 127.0.0.1 rabbitmq.afeez-dev.local
 127.0.0.1 grafana.afeez-dev.local
@@ -123,7 +116,6 @@ How to edit hosts file:
 127.0.0.1 task-service.local
 127.0.0.1 notification-service.local
 127.0.0.1 file-service.local
-127.0.0.1 analytics-service.local
 127.0.0.1 api-gateway.local
 ```
 
@@ -145,7 +137,6 @@ mkcert -key-file infra/traefik/certs/local-key.pem -cert-file infra/traefik/cert
   task-service.afeez-dev.local \
   notification-service.afeez-dev.local \
   file-service.afeez-dev.local \
-  analytics-service.afeez-dev.local \
   api-gateway.afeez-dev.local \
   grafana.afeez-dev.local
 ```
@@ -159,7 +150,6 @@ mkcert -key-file infra/traefik/certs/local-key.pem -cert-file infra/traefik/cert
 - Task Service: https://task-service.afeez-dev.local (proxy) or http://localhost:3002 (direct)
 - Notification Service: https://notification-service.afeez-dev.local (proxy) or http://localhost:3003 (direct)
 - File Service: https://file-service.afeez-dev.local (proxy) or http://localhost:3004 (direct)
-- Analytics Service: https://analytics-service.afeez-dev.local (proxy) or http://localhost:3005 (direct)
 - MinIO console: https://minio.afeez-dev.local (proxy) or http://localhost:9001 (direct)
 - RabbitMQ console: https://rabbitmq.afeez-dev.local (proxy) or http://localhost:15672 (direct)
 - Grafana (logs UI): https://grafana.afeez-dev.local (proxy) or http://localhost:3009 (direct, admin/admin123)
@@ -173,7 +163,6 @@ mkcert -key-file infra/traefik/certs/local-key.pem -cert-file infra/traefik/cert
 | Task Service (Node)    | https://task-service.afeez-dev.local          | 3002           | Implemented  |
 | Notification Service   | https://notification-service.afeez-dev.local  | 3003           | Implemented  |
 | File Service           | https://file-service.afeez-dev.local          | 3004           | Implemented  |
-| Analytics Service      | https://analytics-service.afeez-dev.local     | 3005           | Implemented  |
 | MinIO Console          | https://minio.afeez-dev.local                 | 9001           | Implemented  |
 | RabbitMQ Console       | https://rabbitmq.afeez-dev.local              | 15672          | Implemented  |
 
@@ -283,8 +272,6 @@ microservices/
 - `task_db` - Task Service
 - `notification_db` - Notification Service
 - `file_db` - File Service
-- `analytics_db` - Analytics Service
-
 All databases run on a single MySQL instance (can be split into separate instances for production).
 
 ## Communication Patterns
@@ -295,7 +282,6 @@ All databases run on a single MySQL instance (can be split into separate instanc
 
 ### RabbitMQ (Asynchronous)
 - Task created → Notification Service
-- File uploaded → Analytics Service
 - Project updated → Notification Service
 
 > For detailed information about event-driven architecture, user synchronization, and RabbitMQ events, see [COMMUNICATION_PATTERNS.md](./COMMUNICATION_PATTERNS.md)

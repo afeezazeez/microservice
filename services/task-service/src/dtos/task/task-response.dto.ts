@@ -11,6 +11,7 @@ export interface ITask {
   created_by: number;
   due_date: string | null;
   watchers?: ITaskWatcher[];
+  file_ids?: number[];
   created_at: string;
   updated_at: string;
 }
@@ -60,6 +61,8 @@ class TaskResponseDto {
   created_at: string;
   updated_at: string;
 
+  file_ids?: number[];
+
   constructor(task: any) {
     this.id = task.id;
     this.project_id = task.project_id;
@@ -74,6 +77,10 @@ class TaskResponseDto {
 
     if (task.watchers) {
       this.watchers = TaskWatcherDto.collection(task.watchers);
+    }
+
+    if (task.file_ids) {
+      this.file_ids = task.file_ids;
     }
   }
 

@@ -28,3 +28,4 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
   sendErrorResponse(res, 'An error occurred. Please try again later', null, [], [], ResponseStatus.INTERNAL_SERVER);
 }
 
+

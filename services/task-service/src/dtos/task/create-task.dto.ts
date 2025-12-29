@@ -27,5 +27,9 @@ export class CreateTaskDto {
   @IsDateString()
   @IsOptional()
   due_date?: string;
+
+  @IsInt({ each: true })
+  @IsOptional()
+  file_ids?: number[];
 }
 

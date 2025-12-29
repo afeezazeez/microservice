@@ -15,6 +15,7 @@ export interface Task {
   created_by: number
   due_date: string | null
   watchers?: TaskWatcher[]
+  file_ids?: number[]
   created_at: string
   updated_at: string
 }
@@ -26,6 +27,7 @@ export interface CreateTaskPayload {
   status?: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'BLOCKED'
   assigned_to?: number
   due_date?: string
+  file_ids?: number[]
 }
 
 export interface UpdateTaskPayload {
@@ -34,5 +36,6 @@ export interface UpdateTaskPayload {
   status?: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'BLOCKED'
   assigned_to?: number
   due_date?: string
+  file_ids?: number[]
 }
 

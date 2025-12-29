@@ -3,6 +3,7 @@ import configService from '../../utils/config/config.service';
 import { WinstonLogger } from '../../utils/logger/winston.logger';
 import Task from '../../database/models/Task';
 import TaskWatcher from '../../database/models/TaskWatcher';
+import TaskFile from '../../database/models/TaskFile';
 
 const Logger = new WinstonLogger('Database');
 const { host, port, name, user, password } = configService.database;
@@ -15,7 +16,7 @@ const sequelize = new Sequelize({
   username: user,
   password,
   logging: configService.isDevelopment ? (msg) => Logger.debug(msg) : false,
-  models: [Task, TaskWatcher],
+  models: [Task, TaskWatcher, TaskFile],
   define: {
     underscored: true,
     timestamps: true,

@@ -282,5 +282,30 @@ router.delete('/:id/watch', requirePermission('task:view'), taskController.stopW
  */
 router.get('/:id/watchers', requirePermission('task:view'), taskController.getWatchers);
 
+/**
+ * @swagger
+ * /tasks/{id}/files:
+ *   get:
+ *     summary: Get all files for a task
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: Files retrieved successfully
+ *       404:
+ *         description: Task not found
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/:id/files', requirePermission('task:view'), taskController.getFiles);
+
 export default router;
 

@@ -9,7 +9,7 @@ RED := \033[0;31m
 NC := \033[0m
 
 # Service mappings
-SERVICES := iam-service iam-nginx project-service notification-service api-gateway frontend task-service file-service analytics-service
+SERVICES := iam-service iam-nginx project-service notification-service api-gateway frontend task-service file-service
 INFRA := traefik mysql redis rabbitmq minio loki promtail grafana
 
 help: ## Show help message
@@ -130,6 +130,10 @@ migrate: ## Run migrations (usage: make migrate [service-name])
 			echo "$(BLUE)🗄️  Running Task migrations...$(NC)"; \
 			docker-compose exec -T task-service npm run migrate || true; \
 			;; \
+		file-service) \
+			echo "$(BLUE)🗄️  Running File migrations...$(NC)"; \
+			docker-compose exec -T file-service npm run migrate || true; \
+			;; \
 		*) \
 			echo "$(YELLOW)⚠️  Migrations not configured for $$SERVICE_NAME$(NC)"; \
 			;; \
@@ -195,6 +199,12 @@ status: ## Display all service URLs and documentation links
 		echo "    📚 Docs: https://task-service.afeez-dev.local/api/docs"; \
 		echo ""; \
 	fi
+	@if docker-compose ps | grep -q "file-service.*Up"; then \
+		echo "$(YELLOW)✓ File Service (Node.js)$(NC)"; \
+		echo "    🌐 API:  https://file-service.afeez-dev.local/api"; \
+		echo "    📚 Docs: https://file-service.afeez-dev.local/api/docs"; \
+		echo ""; \
+	fi
 	@if docker-compose ps | grep -q "notification-service.*Up"; then \
 		echo "$(YELLOW)✓ Notification Service (Node.js)$(NC)"; \
 		echo "    🌐 API:  https://notification-service.afeez-dev.local"; \
@@ -206,18 +216,6 @@ status: ## Display all service URLs and documentation links
 		echo "    🌐 App:  https://app.afeez-dev.local"; \
 		echo ""; \
 	fi
-	@if docker-compose ps | grep -q "file-service.*Up"; then \
-		echo "$(YELLOW)✓ File Service (Node.js)$(NC)"; \
-		echo "    🌐 API:  https://file-service.afeez-dev.local"; \
-		echo "    📚 Docs: https://file-service.afeez-dev.local/api/docs"; \
-		echo ""; \
-	fi
-	@if docker-compose ps | grep -q "analytics-service.*Up"; then \
-		echo "$(YELLOW)✓ Analytics Service (Node.js)$(NC)"; \
-		echo "    🌐 API:  https://analytics-service.afeez-dev.local"; \
-		echo "    📚 Docs: https://analytics-service.afeez-dev.local/api/docs"; \
-		echo ""; \
-	fi
 	@if docker-compose ps | grep -q "api-gateway.*Up"; then \
 		echo "$(YELLOW)✓ API Gateway (Node.js)$(NC)"; \
 		echo "    🌐 API:  https://api-gateway.afeez-dev.local"; \
@@ -226,7 +224,6 @@ status: ## Display all service URLs and documentation links
 		echo "    ↪️  Proxies Task Service: https://task-service.afeez-dev.local"; \
 		echo "    ↪️  Proxies Notification Service: https://notification-service.afeez-dev.local"; \
 		echo "    ↪️  Proxies File Service: https://file-service.afeez-dev.local"; \
-		echo "    ↪️  Proxies Analytics Service: https://analytics-service.afeez-dev.local"; \
 		echo ""; \
 	fi
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

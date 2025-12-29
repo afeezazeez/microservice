@@ -142,5 +142,16 @@ export class TaskController {
       next(error);
     }
   };
+
+  getFiles = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const taskId = parseInt(req.params.id);
+      const files = await this.taskService.getFilesForTask(taskId);
+
+      return sendSuccessResponse(res, files, 'Files retrieved successfully');
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 

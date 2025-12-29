@@ -18,3 +18,4 @@ export interface IBaseRepository<T extends Model> {
   count(where: WhereOptions<T>): Promise<number>;
 }
 
+

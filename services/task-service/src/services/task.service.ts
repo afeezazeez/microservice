@@ -1,5 +1,6 @@
 import { TaskRepository } from '../repositories/task.repository';
 import { TaskWatcherRepository } from '../repositories/task-watcher.repository';
+import { TaskFileRepository } from '../repositories/task-file.repository';
 import { CreateTaskDto } from '../dtos/task/create-task.dto';
 import { UpdateTaskDto } from '../dtos/task/update-task.dto';
 import { ClientErrorException } from '../exceptions/client.error.exception';
@@ -7,6 +8,7 @@ import { ResponseStatus } from '../enums/http-status-codes';
 import { TaskStatus } from '../enums/task-status.enum';
 import Task from '../database/models/Task';
 import TaskWatcher from '../database/models/TaskWatcher';
+import TaskFile from '../database/models/TaskFile';
 import { PaginationOptions, PaginationMeta } from '../interfaces/pagination.interface';
 import { generatePaginationMeta } from '../utils/helper';
 import { WinstonLogger } from '../utils/logger/winston.logger';
@@ -16,12 +18,14 @@ import { RabbitMQService } from './rabbitmq.service';
 export class TaskService {
   private readonly taskRepository: TaskRepository;
   private readonly taskWatcherRepository: TaskWatcherRepository;
+  private readonly taskFileRepository: TaskFileRepository;
   private readonly logger: WinstonLogger;
   private readonly rabbitMQService: RabbitMQService;
 
   constructor(logger?: WinstonLogger) {
     this.taskRepository = new TaskRepository();
     this.taskWatcherRepository = new TaskWatcherRepository();
+    this.taskFileRepository = new TaskFileRepository();
     this.logger = logger || new WinstonLogger('TaskService');
     this.rabbitMQService = new RabbitMQService(logger);
   }
@@ -61,6 +65,10 @@ export class TaskService {
       user_id: userId,
     });
 
+    if (dto.file_ids && dto.file_ids.length > 0) {
+      await this.attachFilesToTask(task.id, dto.file_ids);
+    }
+
     return task;
   }
 
@@ -86,7 +94,7 @@ export class TaskService {
     };
   }
 
-  async fetchTask(taskId: number): Promise<Task> {
+  async fetchTask(taskId: number): Promise<Task & { file_ids?: number[] }> {
     const task = await this.taskRepository.findById(taskId, {
       include: [{ model: TaskWatcher, as: 'watchers' }],
     });
@@ -95,7 +103,13 @@ export class TaskService {
       throw new ClientErrorException('Task not found', ResponseStatus.NOT_FOUND);
     }
 
-    return task;
+    const taskFiles = await this.taskFileRepository.findAllWithoutPagination({
+      where: { task_id: taskId } as any,
+    });
+
+    const fileIds = taskFiles.map(tf => tf.file_id);
+
+    return { ...task.toJSON(), file_ids: fileIds } as Task & { file_ids?: number[] };
   }
 
   async updateTask(
@@ -120,12 +134,36 @@ export class TaskService {
 
     await this.taskRepository.update(taskId, updateData);
 
+    if (dto.file_ids !== undefined) {
+      await this.replaceTaskFiles(taskId, dto.file_ids);
+    }
+
     return await this.fetchTask(taskId);
   }
 
   async deleteTask(taskId: number): Promise<void> {
-    await this.fetchTask(taskId);
+    const task = await this.fetchTask(taskId);
+    
+    const taskFiles = await this.taskFileRepository.findAllWithoutPagination({
+      where: { task_id: taskId } as any,
+    });
+    
+    const fileIds = taskFiles.map(tf => tf.file_id);
+    
+    await this.taskFileRepository.destroy({
+      where: { task_id: taskId } as any,
+    });
+    
     await this.taskRepository.hardDelete(taskId);
+
+    if (fileIds.length > 0) {
+      await this.rabbitMQService.publish('task.events', 'task.deleted', {
+        event: 'task.deleted',
+        data: {
+          file_ids: fileIds,
+        },
+      });
+    }
   }
 
   async startWatching(taskId: number, userId: number): Promise<void> {
@@ -166,6 +204,60 @@ export class TaskService {
     }
 
     return await this.taskWatcherRepository.findByTaskId(taskId);
+  }
+
+  async getFilesForTask(taskId: number): Promise<number[]> {
+    const task = await this.taskRepository.findById(taskId);
+    if (!task) {
+      throw new ClientErrorException('Task not found', ResponseStatus.NOT_FOUND);
+    }
+
+    const taskFiles = await this.taskFileRepository.findAllWithoutPagination({
+      where: { task_id: taskId } as any,
+    });
+
+    return taskFiles.map(tf => tf.file_id);
+  }
+
+  private async attachFilesToTask(taskId: number, fileIds: number[]): Promise<void> {
+    for (const fileId of fileIds) {
+      const existing = await this.taskFileRepository.findOne({
+        where: {
+          task_id: taskId,
+          file_id: fileId,
+        } as any,
+      });
+
+      if (!existing) {
+        await this.taskFileRepository.create({
+          task_id: taskId,
+          file_id: fileId,
+        });
+      }
+    }
+  }
+
+  private async replaceTaskFiles(taskId: number, fileIds: number[]): Promise<void> {
+    const existingTaskFiles = await this.taskFileRepository.findAllWithoutPagination({
+      where: { task_id: taskId } as any,
+    });
+    const existingFileIds = new Set(existingTaskFiles.map(tf => tf.file_id));
+    const newFileIds = new Set(fileIds);
+
+    for (const taskFile of existingTaskFiles) {
+      if (!newFileIds.has(taskFile.file_id)) {
+        await this.taskFileRepository.hardDelete(taskFile.id);
+      }
+    }
+
+    for (const fileId of fileIds) {
+      if (!existingFileIds.has(fileId)) {
+        await this.taskFileRepository.create({
+          task_id: taskId,
+          file_id: fileId,
+        });
+      }
+    }
   }
 }
 

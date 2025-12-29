@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { authApi } from '@/api/auth'
 import type { User, LoginPayload, RegisterPayload } from '@/types/auth'
 import { showSuccess, showError } from '@/utils/toast'
@@ -40,14 +40,25 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authApi.register(payload)
       
       if (response.success && response.data) {
-        const { access_token, refresh_token, user: userData, company } = response.data
+        const { access_token, refresh_token, company } = response.data
         
         localStorage.setItem('access_token', access_token)
         localStorage.setItem('refresh_token', refresh_token)
-        user.value = userData
         
-        showSuccess(`Account created! Welcome to ${company.name}, ${userData.name}!`)
+        try {
+          const meResponse = await authApi.me()
+          if (meResponse.success && meResponse.data?.user) {
+            user.value = meResponse.data.user
+          } else {
+            user.value = response.data.user
+          }
+        } catch {
+          user.value = response.data.user
+        }
         
+        showSuccess(`Account created! Welcome to ${company.name}, ${user.value?.name}!`)
+        
+        await nextTick()
         router.push('/dashboard')
         return { success: true }
       }
@@ -68,14 +79,25 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authApi.login(payload)
       
       if (response.success && response.data) {
-        const { access_token, refresh_token, user: userData } = response.data
+        const { access_token, refresh_token } = response.data
         
         localStorage.setItem('access_token', access_token)
         localStorage.setItem('refresh_token', refresh_token)
-        user.value = userData
         
-        showSuccess(`Welcome back! Logged in as ${userData.email}`)
+        try {
+          const meResponse = await authApi.me()
+          if (meResponse.success && meResponse.data?.user) {
+            user.value = meResponse.data.user
+          } else {
+            user.value = response.data.user
+          }
+        } catch {
+          user.value = response.data.user
+        }
         
+        showSuccess(`Welcome back! Logged in as ${user.value?.email}`)
+        
+        await nextTick()
         router.push('/dashboard')
         return { success: true }
       }

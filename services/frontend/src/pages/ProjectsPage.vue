@@ -7,7 +7,7 @@ import { useProjectsStore } from '@/stores/projects'
 import { useUsersStore } from '@/stores/users'
 import { useAuthStore } from '@/stores/auth'
 import type { Project } from '@/types/projects'
-import type { CreateProjectPayload, UpdateProjectPayload, AddMemberPayload } from '@/types/projects'
+import type { CreateProjectPayload, UpdateProjectPayload } from '@/types/projects'
 
 const projectsStore = useProjectsStore()
 const usersStore = useUsersStore()
@@ -18,9 +18,13 @@ const canCreateProject = computed(() => {
   return roles.includes('super-admin') || roles.includes('project-manager')
 })
 
-function canDeleteProject(project: Project): boolean {
+const canDeleteProject = computed(() => {
   const permissions = authStore.user?.permissions || []
   return permissions.includes('project:delete')
+})
+
+function canDeleteProjectFor(_project: Project): boolean {
+  return canDeleteProject.value
 }
 
 const showCreateModal = ref(false)
@@ -36,12 +40,18 @@ const createForm = ref({
   end_date: '',
 })
 
-const editForm = ref({
+const editForm = ref<{
+  name: string
+  description: string
+  status: 'active' | 'archived' | 'completed'
+  start_date: string | undefined
+  end_date: string | undefined
+}>({
   name: '',
   description: '',
-  status: 'active' as 'active' | 'archived' | 'completed',
-  start_date: '',
-  end_date: '',
+  status: 'active',
+  start_date: undefined,
+  end_date: undefined,
 })
 
 
@@ -70,8 +80,8 @@ function openEditModal(project: Project) {
     name: project.name,
     description: project.description || '',
     status: project.status,
-    start_date: project.start_date ? project.start_date.split('T')[0] : '',
-    end_date: project.end_date ? project.end_date.split('T')[0] : '',
+    start_date: project.start_date ? project.start_date.split('T')[0] : undefined,
+    end_date: project.end_date ? project.end_date.split('T')[0] : undefined,
   }
   showEditModal.value = true
 }
@@ -106,11 +116,6 @@ async function handleDelete() {
   projectToDelete.value = null
 }
 
-function openViewModal(project: Project) {
-  router.push(`/projects/${project.id}`)
-}
-
-
 function getStatusColor(status: string) {
   const colors: Record<string, string> = {
     active: 'bg-green-500/20 text-green-400',
@@ -120,10 +125,6 @@ function getStatusColor(status: string) {
   return colors[status] || 'bg-zinc-500/20 text-zinc-400'
 }
 
-function getMemberName(userId: number) {
-  const user = usersStore.users.find(u => u.id === userId)
-  return user ? user.name : `User ${userId}`
-}
 
 onMounted(() => {
   projectsStore.fetchProjects()
@@ -202,7 +203,7 @@ onMounted(() => {
                     Edit
                   </button>
                   <button
-                    v-if="canDeleteProject(project)"
+                    v-if="canDeleteProjectFor(project)"
                     @click="openDeleteModal(project.id)"
                     class="text-red-400 hover:text-red-300 cursor-pointer"
                   >
@@ -246,7 +247,7 @@ onMounted(() => {
                   </svg>
                 </button>
                 <button
-                  v-if="canDeleteProject(project)"
+                  v-if="canDeleteProjectFor(project)"
                   @click="openDeleteModal(project.id)"
                   class="text-red-400 hover:text-red-300 cursor-pointer"
                   aria-label="Delete project"

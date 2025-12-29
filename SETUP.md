@@ -15,7 +15,6 @@ Add these to your hosts file (copy/paste ready):
 127.0.0.1 task-service.afeez-dev.local
 127.0.0.1 notification-service.afeez-dev.local
 127.0.0.1 file-service.afeez-dev.local
-127.0.0.1 analytics-service.afeez-dev.local
 127.0.0.1 api-gateway.afeez-dev.local
 127.0.0.1 grafana.afeez-dev.local
 ```
@@ -42,7 +41,6 @@ mkcert -key-file infra/traefik/certs/local-key.pem -cert-file infra/traefik/cert
   task-service.afeez-dev.local \
   notification-service.afeez-dev.local \
   file-service.afeez-dev.local \
-  analytics-service.afeez-dev.local \
   api-gateway.afeez-dev.local \
   grafana.afeez-dev.local
 ```
@@ -56,7 +54,6 @@ mkcert -key-file infra/traefik/certs/local-key.pem -cert-file infra/traefik/cert
 - Task Service: https://task-service.afeez-dev.local (proxy) or http://localhost:3002 (direct)
 - Notification Service: https://notification-service.afeez-dev.local (proxy) or http://localhost:3003 (direct)
 - File Service: https://file-service.afeez-dev.local (proxy) or http://localhost:3004 (direct)
-- Analytics Service: https://analytics-service.afeez-dev.local (proxy) or http://localhost:3005 (direct)
 - MinIO console: https://minio.afeez-dev.local (proxy) or http://localhost:9001 (direct)
 - RabbitMQ console: https://rabbitmq.afeez-dev.local (proxy) or http://localhost:15672 (direct)
 - Grafana (logs UI): https://grafana.afeez-dev.local (proxy) or http://localhost:3009 (direct, admin/admin123)
@@ -77,7 +74,6 @@ cp services/project-service/.env.example services/project-service/.env
 cp services/task-service/.env.example services/task-service/.env
 cp services/notification-service/.env.example services/notification-service/.env
 cp services/file-service/.env.example services/file-service/.env
-cp services/analytics-service/.env.example services/analytics-service/.env
 cp services/api-gateway/.env.example services/api-gateway/.env
 ```
 
@@ -178,23 +174,6 @@ MINIO_SECRET_KEY=minioadmin123
 MINIO_BUCKET=task-files
 ```
 
-#### Analytics Service (`services/analytics-service/.env`)
-```env
-NODE_ENV=development
-PORT=3005
-APP_NAME="Analytics Service"
-APP_URL=https://analytics-service.afeez-dev.local
-
-DB_HOST=mysql
-DB_PORT=3306
-DB_NAME=analytics_db
-DB_USER=root
-DB_PASSWORD=rootpassword
-
-RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672
-IAM_SERVICE_URL=http://iam-service:8000
-```
-
 #### API Gateway (`services/api-gateway/.env`)
 ```env
 NODE_ENV=development
@@ -207,8 +186,6 @@ PROJECT_SERVICE_URL=http://project-service:3001
 TASK_SERVICE_URL=http://task-service:3002
 NOTIFICATION_SERVICE_URL=http://notification-service:3003
 FILE_SERVICE_URL=http://file-service:3004
-ANALYTICS_SERVICE_URL=http://analytics-service:3005
-
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
 RATE_LIMIT_MAX_REQUESTS=100
 RATE_LIMIT_WINDOW_MS=60000
