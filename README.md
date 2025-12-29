@@ -52,9 +52,9 @@ A comprehensive microservices demonstration project showcasing:
 
 ### 4. Notification Service (Node.js + TS)
 - **Port**: 3003
-- **Responsibilities**: Real-time notifications, Email
+- **Responsibilities**: Real-time notifications (Socket.IO), Email notifications, In-app notifications
 - **Database**: `notification_db` (MySQL with Sequelize)
-- **Tech**: Node.js, TypeScript, Express
+- **Tech**: Node.js, TypeScript, Express, Socket.IO
 
 ### 5. File Service (Node.js + TS)
 - **Port**: 3004
@@ -278,10 +278,58 @@ All databases run on a single MySQL instance (can be split into separate instanc
 ### HTTP (Synchronous)
 - Frontend → API Gateway → Services
 - Service-to-service calls (when needed)
+- API Gateway validates JWT tokens and permissions via IAM Service
 
-### RabbitMQ (Asynchronous)
-- Task created → Notification Service
-- Project updated → Notification Service
+### RabbitMQ (Asynchronous - Event-Driven)
+The system uses **Topic Exchanges** for event-driven communication between services:
+
+#### User Events (`user.events` exchange)
+- **`user.created`** - User registration/invitation → Notification Service creates local user record
+- **`user.updated`** - User details modified → Notification Service updates local user record
+- **`user.deleted`** - User removed → Notification Service deletes local user record
+- **`user.invited`** - User invited to company → Notification Service sends welcome email
+
+#### Project Events (`project.events` exchange)
+- **`project.member.added`** - User added to project → Notification Service sends notification email
+- **`project.member.removed`** - User removed from project → Notification Service sends removal notification
+
+#### Task Events (`task.events` exchange)
+- **`task.created`** - New task created with assignee → Notification Service sends email and in-app notification to assignee
+- **`task.updated`** - Task details updated → Notification Service sends email and in-app notification to watchers and assignee (excluding editor)
+- **`task.deleted`** - Task deleted → Notification Service sends email and in-app notification to assignee and watchers
+- **`task.status_changed`** - Task status changed → Notification Service sends email and in-app notification to watchers and assignee (excluding editor)
+- **`task.assignee.updated`** - Task reassigned → Notification Service sends email and in-app notification to new assignee, previous assignee, and watchers
+
+**Event Flow Example:**
+```
+Task Service (Task Created)
+    ↓ publishes task.created event
+RabbitMQ (Topic Exchange: task.events)
+    ↓ routes to notification-service queue
+Notification Service
+    ↓ consumes event
+    ↓ creates in-app notification
+    ↓ sends email notification
+    ↓ broadcasts via Socket.IO to user
+Frontend (Socket.IO client)
+    ↓ receives real-time notification
+    ↓ updates unread count
+```
+
+### Real-Time Notifications (Socket.IO)
+- **Technology**: Socket.IO with WebSocket and polling fallback
+- **Authentication**: JWT token-based authentication for socket connections
+- **Event**: `general-notification` - Broadcasted when a new in-app notification is created
+- **Flow**: 
+  1. Notification Service creates notification in database
+  2. Notification Service broadcasts to specific user via Socket.IO
+  3. Frontend Socket.IO client receives event and updates unread count
+  4. User can view notifications via dropdown (Unread/All tabs)
+- **Features**:
+  - Real-time unread count updates
+  - User-specific notifications (broadcasted only to the target user)
+  - Automatic reconnection with polling fallback
+  - WebSocket support through Traefik proxy
 
 > For detailed information about event-driven architecture, user synchronization, and RabbitMQ events, see [COMMUNICATION_PATTERNS.md](./COMMUNICATION_PATTERNS.md)
 
