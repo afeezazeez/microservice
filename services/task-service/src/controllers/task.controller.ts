@@ -85,7 +85,7 @@ export class TaskController {
       const dto: UpdateTaskDto = req.body;
       const user = req.user!;
 
-      const task = await this.taskService.updateTask(taskId, dto);
+      const task = await this.taskService.updateTask(taskId, dto, user.id);
 
       return sendSuccessResponse(res, TaskResponseDto.make(task), 'Task updated successfully');
     } catch (error) {

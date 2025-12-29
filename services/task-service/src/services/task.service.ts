@@ -69,6 +69,20 @@ export class TaskService {
       await this.attachFilesToTask(task.id, dto.file_ids);
     }
 
+    if (task.assigned_to) {
+      await this.rabbitMQService.publish('task.events', 'task.created', {
+        event: 'task.created',
+        data: {
+          task_id: task.id,
+          task_title: task.title,
+          project_id: task.project_id,
+          project_name: `Project ${task.project_id}`,
+          assigned_to: task.assigned_to,
+          created_by: task.created_by,
+        },
+      });
+    }
+
     return task;
   }
 
@@ -114,14 +128,21 @@ export class TaskService {
 
   async updateTask(
     taskId: number,
-    dto: UpdateTaskDto
+    dto: UpdateTaskDto,
+    updatedBy?: number
   ): Promise<Task> {
     const task = await this.fetchTask(taskId);
 
     const previousStatus = task.status;
     const newStatus = dto.status || task.status;
+    const statusChanged = dto.status !== undefined && dto.status !== previousStatus;
+    
+    const previousAssignee = task.assigned_to ?? null;
+    const hasAssigneeUpdate = dto.assigned_to !== undefined;
+    const newAssignee = hasAssigneeUpdate ? (dto.assigned_to ?? null) : previousAssignee;
+    const assigneeChanged = hasAssigneeUpdate && newAssignee !== previousAssignee;
 
-    if (dto.status && dto.status !== previousStatus) {
+    if (statusChanged) {
       this.validateStatusTransition(previousStatus, newStatus);
     }
 
@@ -138,7 +159,55 @@ export class TaskService {
       await this.replaceTaskFiles(taskId, dto.file_ids);
     }
 
-    return await this.fetchTask(taskId);
+    const updatedTask = await this.fetchTask(taskId);
+    const watchers = await this.getWatchers(taskId);
+    const watcherIds = watchers.map(w => w.user_id);
+
+    if (assigneeChanged && updatedBy) {
+      await this.rabbitMQService.publish('task.events', 'task.assignee.updated', {
+        event: 'task.assignee.updated',
+        data: {
+          task_id: updatedTask.id,
+          task_title: updatedTask.title,
+          project_id: updatedTask.project_id,
+          project_name: `Project ${updatedTask.project_id}`,
+          previous_assignee: previousAssignee || undefined,
+          new_assignee: newAssignee || undefined,
+          updated_by: updatedBy,
+          watcher_ids: watcherIds,
+        },
+      });
+    } else if (statusChanged && updatedBy) {
+      await this.rabbitMQService.publish('task.events', 'task.status_changed', {
+        event: 'task.status_changed',
+        data: {
+          task_id: updatedTask.id,
+          task_title: updatedTask.title,
+          project_id: updatedTask.project_id,
+          project_name: `Project ${updatedTask.project_id}`,
+          old_status: previousStatus,
+          new_status: newStatus,
+          assigned_to: updatedTask.assigned_to || undefined,
+          updated_by: updatedBy,
+          watcher_ids: watcherIds,
+        },
+      });
+    } else if (updatedBy) {
+      await this.rabbitMQService.publish('task.events', 'task.updated', {
+        event: 'task.updated',
+        data: {
+          task_id: updatedTask.id,
+          task_title: updatedTask.title,
+          project_id: updatedTask.project_id,
+          project_name: `Project ${updatedTask.project_id}`,
+          assigned_to: updatedTask.assigned_to || undefined,
+          updated_by: updatedBy,
+          watcher_ids: watcherIds,
+        },
+      });
+    }
+
+    return updatedTask;
   }
 
   async deleteTask(taskId: number): Promise<void> {
@@ -149,12 +218,37 @@ export class TaskService {
     });
     
     const fileIds = taskFiles.map(tf => tf.file_id);
+    const watchers = await this.getWatchers(taskId);
+    const watcherIds = watchers.map(w => w.user_id);
+
+    const taskInfo = {
+      task_id: task.id,
+      task_title: task.title,
+      project_id: task.project_id,
+      project_name: `Project ${task.project_id}`,
+      assigned_to: task.assigned_to,
+      watcher_ids: watcherIds,
+    };
     
     await this.taskFileRepository.destroy({
       where: { task_id: taskId } as any,
     });
     
     await this.taskRepository.hardDelete(taskId);
+
+    if (taskInfo.assigned_to || taskInfo.watcher_ids.length > 0) {
+      await this.rabbitMQService.publish('task.events', 'task.deleted', {
+        event: 'task.deleted',
+        data: {
+          task_id: taskInfo.task_id,
+          task_title: taskInfo.task_title,
+          project_id: taskInfo.project_id,
+          project_name: taskInfo.project_name,
+          assigned_to: taskInfo.assigned_to || undefined,
+          watcher_ids: taskInfo.watcher_ids,
+        },
+      });
+    }
 
     if (fileIds.length > 0) {
       await this.rabbitMQService.publish('task.events', 'task.deleted', {

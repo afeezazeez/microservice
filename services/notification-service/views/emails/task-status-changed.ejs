@@ -1,0 +1,47 @@
+<div style="max-width: 600px; margin: 0 auto; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <div style="text-align: center; margin-bottom: 40px;">
+    <h1 style="color: #6366f1; margin: 0; font-size: 32px; font-weight: 700;">TaskFlow</h1>
+  </div>
+
+  <div style="background: #ffffff; border-radius: 12px; padding: 40px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+    <h2 style="color: #1f2937; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">Task Status Changed</h2>
+    
+    <p style="color: #4b5563; margin: 0 0 24px 0; font-size: 16px; line-height: 1.6;">
+      Hello <%= userName %>,
+    </p>
+    
+    <p style="color: #4b5563; margin: 0 0 24px 0; font-size: 16px; line-height: 1.6;">
+      The status of task <strong style="color: #1f2937;"><%= taskTitle %></strong> in project <strong style="color: #1f2937;"><%= projectName %></strong> has been changed.
+    </p>
+    
+    <div style="background: #f3f4f6; border-radius: 8px; padding: 20px; margin: 24px 0;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <span style="color: #6b7280; font-size: 14px; font-weight: 500;">Previous Status:</span>
+        <span style="color: #1f2937; font-size: 16px; font-weight: 600; text-transform: capitalize;"><%= oldStatus %></span>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <span style="color: #6b7280; font-size: 14px; font-weight: 500;">New Status:</span>
+        <span style="color: #6366f1; font-size: 16px; font-weight: 600; text-transform: capitalize;"><%= newStatus %></span>
+      </div>
+    </div>
+    
+    <p style="color: #4b5563; margin: 0 0 32px 0; font-size: 16px; line-height: 1.6;">
+      Click the button below to view the project and see the updated task:
+    </p>
+    
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="<%= frontendUrl %>/projects" style="display: inline-block; background: #6366f1; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; transition: background-color 0.2s;">
+        View Project
+      </a>
+    </div>
+    
+    <p style="color: #9ca3af; margin: 32px 0 0 0; font-size: 14px; line-height: 1.5;">
+      If you have any questions about this status change, please contact your project manager.
+    </p>
+  </div>
+
+  <div style="text-align: center; margin-top: 40px; color: #9ca3af; font-size: 14px;">
+    <p style="margin: 0;">© <%= new Date().getFullYear() %> TaskFlow. All rights reserved.</p>
+  </div>
+</div>
+

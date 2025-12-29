@@ -2,6 +2,7 @@ import { Sequelize } from 'sequelize-typescript';
 import { config } from './index';
 import { logger } from '../utils/logger';
 import User from '../database/models/User';
+import Notification from '../database/models/Notification';
 
 const sequelize = new Sequelize({
   dialect: 'mysql',
@@ -11,7 +12,7 @@ const sequelize = new Sequelize({
   username: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || 'rootpassword',
   logging: config.nodeEnv === 'development' ? (msg: string) => logger.debug(msg) : false,
-  models: [User],
+  models: [User, Notification],
   define: {
     underscored: true,
     timestamps: true,

@@ -554,6 +554,11 @@ function openAddMemberModal() {
 }
 
 async function handleAddMember() {
+  if (!addMemberForm.value.user_id || addMemberForm.value.user_id === 0) {
+    showError('Please select a user')
+    return
+  }
+
   const payload: AddMemberPayload = {
     user_id: addMemberForm.value.user_id,
   }

@@ -18,6 +18,7 @@ import { rolesRouter } from './routes/roles';
 import { projectsRouter } from './routes/projects';
 import { tasksRouter } from './routes/tasks';
 import { filesRouter } from './routes/files';
+import { notificationsRouter } from './routes/notifications';
 
 const app = express();
 const publicDir = path.join(__dirname, '../public');
@@ -72,6 +73,7 @@ app.use('/api/roles', rolesRouter);
 app.use('/api/projects', projectsRouter);
 app.use('/api/tasks', tasksRouter);
 app.use('/api/files', filesRouter);
+app.use('/api/notifications', notificationsRouter);
 
 export { app };
 

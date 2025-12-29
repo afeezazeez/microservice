@@ -6,6 +6,11 @@ import { UserDeletedHandler } from './user-deleted.handler';
 import { UserInvitedHandler } from './user-invited.handler';
 import { ProjectMemberAddedHandler } from './project-member-added.handler';
 import { ProjectMemberRemovedHandler } from './project-member-removed.handler';
+import { TaskCreatedHandler } from './task-created.handler';
+import { TaskUpdatedHandler } from './task-updated.handler';
+import { TaskDeletedHandler } from './task-deleted.handler';
+import { TaskStatusChangedHandler } from './task-status-changed.handler';
+import { TaskAssigneeUpdatedHandler } from './task-assignee-updated.handler';
 
 export class EventHandlerFactory {
   private static handlers = new Map<string, () => IEventHandler>([
@@ -15,6 +20,11 @@ export class EventHandlerFactory {
     ['user.invited', () => new UserInvitedHandler()],
     ['project.member.added', () => new ProjectMemberAddedHandler()],
     ['project.member.removed', () => new ProjectMemberRemovedHandler()],
+    ['task.created', () => new TaskCreatedHandler()],
+    ['task.updated', () => new TaskUpdatedHandler()],
+    ['task.deleted', () => new TaskDeletedHandler()],
+    ['task.status_changed', () => new TaskStatusChangedHandler()],
+    ['task.assignee.updated', () => new TaskAssigneeUpdatedHandler()],
   ]);
 
   static getHandler(eventType: string): IEventHandler | null {

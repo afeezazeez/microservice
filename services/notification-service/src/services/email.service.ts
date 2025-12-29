@@ -26,7 +26,12 @@ export class EmailService {
       } : undefined,
     });
 
-    this.templatesPath = path.join(__dirname, '../../views/emails');
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (isProduction) {
+      this.templatesPath = path.join(process.cwd(), 'views/emails');
+    } else {
+      this.templatesPath = path.join(__dirname, '../../views/emails');
+    }
   }
 
   async sendEmail(options: EmailOptions): Promise<void> {

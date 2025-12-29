@@ -42,6 +42,11 @@ export const config: {
         type: 'topic',
         durable: true,
       },
+      {
+        name: 'task.events',
+        type: 'topic',
+        durable: true,
+      },
     ],
     queues: [
       {
@@ -101,6 +106,56 @@ export const config: {
           {
             exchange: 'project.events',
             routingKey: 'project.member.removed',
+          },
+        ],
+      },
+      {
+        name: 'task.created',
+        durable: true,
+        bindings: [
+          {
+            exchange: 'task.events',
+            routingKey: 'task.created',
+          },
+        ],
+      },
+      {
+        name: 'task.updated',
+        durable: true,
+        bindings: [
+          {
+            exchange: 'task.events',
+            routingKey: 'task.updated',
+          },
+        ],
+      },
+      {
+        name: 'task.deleted',
+        durable: true,
+        bindings: [
+          {
+            exchange: 'task.events',
+            routingKey: 'task.deleted',
+          },
+        ],
+      },
+      {
+        name: 'task.status_changed',
+        durable: true,
+        bindings: [
+          {
+            exchange: 'task.events',
+            routingKey: 'task.status_changed',
+          },
+        ],
+      },
+      {
+        name: 'task.assignee.updated',
+        durable: true,
+        bindings: [
+          {
+            exchange: 'task.events',
+            routingKey: 'task.assignee.updated',
           },
         ],
       },
