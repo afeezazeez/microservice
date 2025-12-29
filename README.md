@@ -253,7 +253,6 @@ microservices/
 │   ├── task-service/          # Node.js + TS (task_db)
 │   ├── notification-service/  # Node.js + TS (notification_db)
 │   ├── file-service/          # Node.js + TS (file_db)
-│   ├── analytics-service/      # Node.js + TS (analytics_db)
 │   └── api-gateway/           # Node.js + TS (no DB)
 ├── docker/
 │   └── mysql/
