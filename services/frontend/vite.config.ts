@@ -28,10 +28,7 @@ export default defineConfig(({ mode }) => {
       watch: {
         usePolling: true,
       },
-      hmr: {
-        host: 'localhost',
-        port: 5173,
-      },
+      hmr: false,
       // For local dev outside Docker, proxy /api to API Gateway
       proxy: {
         '/api': {

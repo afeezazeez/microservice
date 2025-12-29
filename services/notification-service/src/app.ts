@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
+import { createServer } from 'http';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger.config';
 import { logger } from './utils/logger';
@@ -8,8 +9,10 @@ import { notificationsRouter } from './routes/notifications';
 import { errorHandler } from './middlewares/error.handler';
 import { ClientErrorException } from './exceptions/client.error.exception';
 import { ResponseStatus } from './enums/http-status-codes';
+import { socketService } from './services/socket.service';
 
 const app = express();
+const httpServer = createServer(app);
 
 app.use(express.json());
 
@@ -41,6 +44,7 @@ export async function initializeServices(): Promise<void> {
     await initializeDatabase();
     rabbitmqService = new RabbitMQService();
     await rabbitmqService.connect();
+    socketService.initialize(httpServer);
 
     logger.info('All services initialized successfully');
   } catch (error) {
@@ -60,5 +64,5 @@ export async function shutdownServices(): Promise<void> {
   }
 }
 
-export { app };
+export { app, httpServer };
 

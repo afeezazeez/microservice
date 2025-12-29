@@ -1,6 +1,9 @@
 import { NotificationRepository } from '../repositories/notification.repository';
 import Notification from '../database/models/Notification';
 import { logger } from '../utils/logger';
+import { socketService } from './socket.service';
+import NotificationResponseDto from '../dtos/notification/notification-response.dto';
+import { INotification } from '../dtos/notification/notification.interface';
 
 export class NotificationService {
   private notificationRepository: NotificationRepository;
@@ -16,17 +19,23 @@ export class NotificationService {
     message: string;
     metadata?: Record<string, any>;
   }): Promise<Notification> {
-    return await this.notificationRepository.create({
+    const notification = await this.notificationRepository.create({
       user_id: data.user_id,
       type: data.type,
       title: data.title,
       message: data.message,
       metadata: data.metadata,
     });
+
+    const notificationDto = NotificationResponseDto.make(notification);
+    socketService.broadcastToUser(data.user_id, 'general-notification', notificationDto);
+
+    return notification;
   }
 
-  async getNotifications(userId: number, filter: 'unread' | 'all' = 'unread'): Promise<Notification[]> {
-    return await this.notificationRepository.findAllByUserId(userId, filter);
+  async getNotifications(userId: number, filter: 'unread' | 'all' = 'unread'): Promise<INotification[]> {
+    const notifications = await this.notificationRepository.findAllByUserId(userId, filter);
+    return NotificationResponseDto.collection(notifications);
   }
 
   async markAsRead(notificationId: number, userId: number): Promise<void> {

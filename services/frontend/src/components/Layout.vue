@@ -16,6 +16,7 @@ let pollInterval: number | null = null
 onMounted(async () => {
   if (authStore.isAuthenticated) {
     await notificationsStore.fetchUnreadCount()
+    notificationsStore.initializeSocket()
     pollInterval = window.setInterval(() => {
       notificationsStore.fetchUnreadCount()
     }, 30000)
@@ -26,6 +27,7 @@ onUnmounted(() => {
   if (pollInterval) {
     clearInterval(pollInterval)
   }
+  notificationsStore.cleanupSocket()
 })
 
 function toggleNotificationDropdown(event: MouseEvent) {

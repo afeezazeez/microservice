@@ -1,4 +1,4 @@
-import { app, initializeServices, shutdownServices } from './app';
+import { httpServer, initializeServices, shutdownServices } from './app';
 import { config } from './config';
 import { logger } from './utils/logger';
 
@@ -6,14 +6,14 @@ async function startServer() {
   try {
     await initializeServices();
 
-    const server = app.listen(config.port, () => {
+    httpServer.listen(config.port, () => {
       logger.info(`Notification service listening on port ${config.port}`);
     });
 
     process.on('SIGTERM', async () => {
       logger.info('SIGTERM received, shutting down gracefully');
       await shutdownServices();
-      server.close(() => {
+      httpServer.close(() => {
         logger.info('Notification service closed');
         process.exit(0);
       });
@@ -22,7 +22,7 @@ async function startServer() {
     process.on('SIGINT', async () => {
       logger.info('SIGINT received, shutting down gracefully');
       await shutdownServices();
-      server.close(() => {
+      httpServer.close(() => {
         logger.info('Notification service closed');
         process.exit(0);
       });

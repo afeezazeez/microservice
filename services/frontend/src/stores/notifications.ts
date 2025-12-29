@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { notificationApi, type Notification } from '@/api/notifications'
 import { showError } from '@/utils/toast'
+import { socketService } from '@/services/socket.service'
 
 export const useNotificationsStore = defineStore('notifications', () => {
   const notifications = ref<Notification[]>([])
@@ -11,6 +12,21 @@ export const useNotificationsStore = defineStore('notifications', () => {
   const unreadNotifications = computed(() => {
     return notifications.value.filter(n => !n.read_at)
   })
+
+  function initializeSocket(): void {
+    const token = localStorage.getItem('access_token')
+    if (!token) return
+    
+    socketService.connect(token)
+    socketService.on('general-notification', () => {
+      unreadCount.value++
+    })
+  }
+
+  function cleanupSocket(): void {
+    socketService.off('general-notification')
+    socketService.disconnect()
+  }
 
   async function fetchNotifications(filter: 'unread' | 'all' = 'unread') {
     try {
@@ -80,6 +96,8 @@ export const useNotificationsStore = defineStore('notifications', () => {
     fetchUnreadCount,
     markAsRead,
     deleteNotification,
+    initializeSocket,
+    cleanupSocket,
   }
 })
 
